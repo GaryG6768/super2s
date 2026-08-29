@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Super 2s Football Wheel</title>
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#07152d,#123f78);color:#fff;min-height:100vh}
+.wrap{max-width:520px;margin:auto;padding:18px 14px 30px;text-align:center}
+h1{margin:8px 0 2px;font-size:30px} .sub{opacity:.8;margin-bottom:18px}
+.card{background:#ffffff12;border:1px solid #ffffff22;border-radius:22px;padding:16px;backdrop-filter:blur(8px)}
+.wheelbox{position:relative;width:min(88vw,390px);height:min(88vw,390px);margin:8px auto 18px}
+canvas{width:100%;height:100%;border-radius:50%;box-shadow:0 10px 35px #0008}
+.pointer{position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;border-top:30px solid #ffd43b;z-index:2}
+button{width:100%;padding:15px;border:0;border-radius:14px;font-size:18px;font-weight:800;margin-top:8px;cursor:pointer}
+#spin{background:#ffd43b;color:#07152d} #newweek{background:#ffffff18;color:#fff;border:1px solid #ffffff33}
+.result{margin-top:14px;font-size:20px;font-weight:800;min-height:32px}
+.small{font-size:13px;opacity:.7;margin-top:12px;line-height:1.4}
+.games{display:none;text-align:left;margin-top:15px;background:#0002;padding:12px;border-radius:14px}
+.game{padding:8px 0;border-bottom:1px solid #ffffff18} .game:last-child{border:0}
+.badge{display:inline-block;padding:4px 8px;border-radius:8px;background:#ffffff18;font-size:12px;margin-right:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SUPER 2s</h1>
+  <div class="sub">Shared Football Wheel • Matchweek 2</div>
+  <div class="card">
+    <div class="wheelbox"><div class="pointer"></div><canvas id="wheel" width="700" height="700"></canvas></div>
+    <button id="spin">SPIN GAME 1</button>
+    <button id="newweek">NEW WEEK</button>
+    <div id="result" class="result"></div>
+    <div class="small">Everyone who opens this shared wheel gets the same two selected games for this week.</div>
+    <div id="games" class="games"></div>
+  </div>
+</div>
+<script>
+const fixtures = [["Crystal Palace", "Man City", "Fri 28 Aug"], ["Liverpool", "Nottingham Forest", "Sat 29 Aug"], ["Bournemouth", "Everton", "Sat 29 Aug"], ["Coventry City", "Hull City", "Sat 29 Aug"], ["Tottenham", "Newcastle", "Sat 29 Aug"], ["Chelsea", "Brighton", "Sun 30 Aug"], ["Leeds", "Brentford", "Sun 30 Aug"], ["Sunderland", "Fulham", "Sun 30 Aug"], ["Man Utd", "Ipswich Town", "Sun 30 Aug"], ["Aston Villa", "Arsenal", "Mon 31 Aug"]];
+const chosen = [7,1];
+const canvas=document.getElementById('wheel'), ctx=canvas.getContext('2d');
+const n=fixtures.length, slice=2*Math.PI/n;
+let rotation=0, spinning=false, spinNo=0;
+const colors=["#0b3d91","#145da0","#1f7a8c","#0b6e4f","#5c2a9d","#7b2cbf","#9d174d","#b45309","#166534","#334155"];
+
+function draw() {
+  ctx.clearRect(0,0,700,700);
+  ctx.save(); ctx.translate(350,350); ctx.rotate(rotation);
+  for(let i=0;i<n;i++) {
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,330,i*slice,(i+1)*slice); ctx.closePath();
+    ctx.fillStyle=colors[i%colors.length]; ctx.fill();
+    ctx.strokeStyle="#fff"; ctx.lineWidth=3; ctx.stroke();
+    ctx.save(); ctx.rotate(i*slice+slice/2); ctx.translate(220,0); ctx.rotate(Math.PI/2);
+    ctx.fillStyle="#fff"; ctx.font="bold 22px Arial"; ctx.textAlign="center";
+    ctx.fillText(fixtures[i][0]+" v",0,-4); ctx.fillText(fixtures[i][1],0,24);
+    ctx.restore();
+  }
+  ctx.beginPath(); ctx.arc(0,0,62,0,Math.PI*2); ctx.fillStyle="#07152d"; ctx.fill();
+  ctx.fillStyle="#ffd43b"; ctx.font="bold 28px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("2s",0,0);
+  ctx.restore();
+}
+draw();
+
+function targetRotation(index, extraTurns) {
+  const center = index*slice + slice/2;
+  return rotation + extraTurns*2*Math.PI + (Math.PI*1.5 - center - (rotation%(2*Math.PI)));
+}
+function spin() {
+  if(spinning || spinNo>=2) return;
+  spinning=true;
+  const idx=chosen[spinNo];
+  const start=rotation;
+  const end=targetRotation(idx, 6);
+  const duration=3600, t0=performance.now();
+  function anim(t) {
+    const p=Math.min(1,(t-t0)/duration), e=1-Math.pow(1-p,4);
+    rotation=start+(end-start)*e; draw();
+    if(p<1) requestAnimationFrame(anim); else {
+      spinning=false; rotation=end; draw();
+      const [h,a,d]=fixtures[idx];
+      spinNo++;
+      document.getElementById("result").innerHTML="GAME "+spinNo+": <b>"+h+" v "+a+"</b><br><span style='font-size:14px;opacity:.75'>"+d+"</span>";
+      document.getElementById("spin").textContent=spinNo===1?"SPIN GAME 2":"BOTH GAMES SELECTED";
+      if(spinNo===2) document.getElementById("spin").disabled=true;
+    }
+  }
+  requestAnimationFrame(anim);
+}
+document.getElementById("spin").onclick=spin;
+document.getElementById("newweek").onclick=()=>{
+  alert("NEW WEEK is controlled by the weekly fixture list. This simple version automatically keeps the same selections for everyone for the current week.");
+};
+fixtures.forEach((f,i)=>{
+  document.getElementById("games").innerHTML += '<div class="game"><span class="badge">'+f[2]+'</span>'+f[0]+' v '+f[1]+'</div>';
+});
+</script>
+</body></html>
