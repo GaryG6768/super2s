@@ -22,22 +22,22 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
 .winner{display:none;text-align:center;background:#fffdf2;border:2px solid #d4af37;position:relative;overflow:hidden}
 .trophy{font-size:92px;animation:bounce 1.2s infinite alternate}.gold{color:#a67c00}.pred{margin:8px 0;font-weight:700}
 @keyframes bounce{to{transform:translateY(-8px) scale(1.04)}}
-.confetti{position:absolute;inset:0;pointer-events:none}.confetti i{position:absolute;top:-20px;width:7px;height:14px;background:#d4af37;animation:fall 3s linear infinite}.confetti i:nth-child(2n){background:#f0d77b}.confetti i:nth-child(3n){background:#b8860b}
+.confetti{position:absolute;inset:0;pointer-events:none}.confetti i{position:absolute;top:-20px;width:7px;height:14px;background:#1785ff;animation:fall 3s linear infinite}.confetti i:nth-child(2n){background:#f0d77b}.confetti i:nth-child(3n){background:#b8860b}
 @keyframes fall{to{transform:translateY(520px) rotate(540deg)}}
 .small{font-size:13px;color:#6b7280}.hidden{display:none}.listrow{padding:10px 0;border-bottom:1px solid #eee}.listrow:last-child{border-bottom:0}
 
-/* Premium black-and-gold wheel */
-.wheelCard{background:radial-gradient(circle at 50% 25%,#252525 0,#111 42%,#050505 100%);color:#fff;text-align:center;padding:20px;border-radius:24px;border:1px solid #6f5720;box-shadow:0 12px 35px #0008}
-.wheelTitle{font-size:25px;font-weight:900;letter-spacing:1.2px;color:#f4d77b;margin-bottom:3px}
-.wheelSub{font-size:12px;color:#c9c9c9;margin-bottom:14px}
-.wheelStage{position:relative;width:min(350px,88vw);height:min(350px,88vw);margin:0 auto 16px}
-.wheel{width:100%;height:100%;border-radius:50%;border:10px solid #d4af37;box-shadow:0 0 0 2px #fff,0 14px 35px #000, inset 0 0 25px #000;position:relative;overflow:hidden;background:#111;transition:transform 5.2s cubic-bezier(.08,.78,.16,1)}
+/* Original-style professional football wheel */
+.wheelCard{background:radial-gradient(circle at 50% 20%,#16253d 0,#0a1220 48%,#02050b 100%);color:#fff;text-align:center;padding:18px;border-radius:24px;border:1px solid #183b67;box-shadow:0 12px 35px #0009}
+.wheelTitle{font-size:25px;font-weight:900;letter-spacing:1.2px;color:#fff;margin-bottom:3px}
+.wheelSub{font-size:12px;color:#b9c7d9;margin-bottom:14px}
+.wheelStage{position:relative;width:min(390px,92vw);height:min(390px,92vw);margin:0 auto 16px}
+.wheel{width:100%;height:100%;border-radius:50%;border:7px solid #d9e2ee;box-shadow:0 0 0 2px #1d7cf2,0 14px 35px #000, inset 0 0 28px #000;position:relative;overflow:hidden;background:#07111f;transition:transform 5.2s cubic-bezier(.08,.78,.16,1)}
 .wheelCanvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%}
-.wheelHub{position:absolute;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);width:82px;height:82px;border-radius:50%;background:#090909;border:5px solid #d4af37;color:#f4d77b;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;line-height:1.05;box-shadow:0 0 18px #d4af3766,0 4px 14px #000}
-.pointer{position:absolute;z-index:7;top:-7px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:17px solid transparent;border-right:17px solid transparent;border-top:42px solid #d4af37;filter:drop-shadow(0 3px 3px #000)}
-.spinBtn{background:linear-gradient(#f5dc82,#c79c22);color:#090909;font-size:19px;border-radius:14px;box-shadow:0 4px 0 #765b0b;font-weight:900}
-.spinBtn:active{transform:translateY(2px);box-shadow:0 2px 0 #765b0b}
-.spinStatus{min-height:22px;margin-top:12px;font-weight:800;color:#f4d77b}
+.wheelHub{position:absolute;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);width:84px;height:84px;border-radius:50%;background:radial-gradient(circle,#17263a,#050a12);border:4px solid #1785ff;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;line-height:1.05;box-shadow:0 0 20px #1785ff66,0 4px 14px #000}
+.pointer{position:absolute;z-index:7;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:17px solid transparent;border-right:17px solid transparent;border-top:40px solid #ef3d35;filter:drop-shadow(0 3px 3px #000)}
+.spinBtn{background:linear-gradient(#1688ff,#0756c7);color:#fff;font-size:19px;border-radius:14px;box-shadow:0 4px 0 #06377f;font-weight:900}
+.spinBtn:active{transform:translateY(2px);box-shadow:0 2px 0 #06377f}
+.spinStatus{min-height:22px;margin-top:12px;font-weight:800;color:#6fb5ff}
 .selectedGame{margin-top:12px;background:#fafafa;color:#111;border-radius:14px;padding:12px;text-align:left;border:2px solid #d4af37}
 .selectedGame strong{display:block;font-size:16px}.selectedGame small{color:#6b7280}
 .wheelHint{font-size:12px;color:#aaa;margin-top:10px}
@@ -123,33 +123,70 @@ function initials(name){
 function drawWheel(){
   const list=wheelGames;
   if(!list.length)return;
-  const canvas=$("wheelCanvas"), stage=$("wheel");
-  const size=Math.min(350,Math.floor(window.innerWidth*.88));
+  const stage=$("wheel"), canvas=$("wheelCanvas");
+  const n=list.length;
+  const maxSize=Math.min(390,Math.floor(window.innerWidth*.92));
+  const minSize=300;
+  // Automatically scale the wheel down slightly when there are many fixtures,
+  // while keeping it large enough to read on a phone.
+  const scale=n>=18?.82:n>=14?.88:n>=10?.94:1;
+  const size=Math.max(minSize,Math.floor(maxSize*scale));
+  stage.style.width=size+"px"; stage.style.height=size+"px";
   canvas.width=size*2; canvas.height=size*2;
   canvas.style.width="100%"; canvas.style.height="100%";
-  const ctx=canvas.getContext("2d"), r=size, cx=r, cy=r, n=list.length;
+  const ctx=canvas.getContext("2d"), r=size, cx=r, cy=r;
   ctx.clearRect(0,0,size*2,size*2);
-  for(let i=0;i<n;i++){
-    const a0=-Math.PI/2 + i*2*Math.PI/n + .006;
-    const a1=-Math.PI/2 + (i+1)*2*Math.PI/n - .006;
+
+  const logos={};
+  list.forEach(g=>{
+    if(g.homeLogo){logos[g.home]=new Image();logos[g.home].src=g.homeLogo;}
+    if(g.awayLogo){logos[g.away]=new Image();logos[g.away].src=g.awayLogo;}
+  });
+
+  function drawSegment(i){
+    const g=list[i], a0=-Math.PI/2+i*2*Math.PI/n+.006, a1=-Math.PI/2+(i+1)*2*Math.PI/n-.006;
+    const mid=(a0+a1)/2;
     ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r-4,a0,a1);ctx.closePath();
-    ctx.fillStyle=i%2===0?"#111":"#202020";ctx.fill();
-    ctx.strokeStyle="#c9a227";ctx.lineWidth=Math.max(1.5,220/n);ctx.stroke();
-    const g=list[i], mid=(a0+a1)/2;
-    ctx.save();ctx.translate(cx+Math.cos(mid)*r*.67,cy+Math.sin(mid)*r*.67);
+    ctx.fillStyle=i%2===0?"#081426":"#10243d";ctx.fill();
+    ctx.strokeStyle="#8ca2bb";ctx.lineWidth=Math.max(1.2,2.2-(n/20));ctx.stroke();
+
+    const fs=Math.max(7.5,Math.min(14,185/n));
+    ctx.save();ctx.translate(cx+Math.cos(mid)*r*.69,cy+Math.sin(mid)*r*.69);
     ctx.rotate(mid+Math.PI/2);
-    const fs=Math.max(9,Math.min(15,190/n));
-    ctx.font=`900 ${fs}px Arial`;ctx.textAlign="center";ctx.fillStyle="#f5df8b";
+    ctx.textAlign="center";ctx.fillStyle="#fff";ctx.font=`900 ${fs}px Arial`;
     let label=(g.home+" v "+g.away);
-    if(label.length>27) label=label.slice(0,26)+"…";
+    if(label.length>28)label=label.slice(0,27)+"…";
     ctx.fillText(label,0,0);
-    ctx.font=`700 ${Math.max(8,fs-2)}px Arial`;ctx.fillStyle="#fff";
-    ctx.fillText(dateLabel(g.kick).replace(/^[A-Za-z]{3},? /,""),0,fs+7);
+    ctx.fillStyle="#39a1ff";ctx.font=`900 ${Math.max(7,fs-1)}px Arial`;
+    ctx.fillText(dateLabel(g.kick).replace(/^[A-Za-z]{3},?\s*/,""),0,fs+8);
     ctx.restore();
+
+    // Real team badges from ESPN's fixture feed.
+    const badgeR=Math.max(8,Math.min(15,125/n));
+    [[g.homeLogo,-.055],[g.awayLogo,.055]].forEach(([url,off])=>{
+      if(!url)return;
+      const img=logos[url? (off<0?g.home:g.away):g.home];
+      if(img && img.complete && img.naturalWidth){
+        const ang=mid+off;
+        const x=cx+Math.cos(ang)*r*.53, y=cy+Math.sin(ang)*r*.53;
+        ctx.save();ctx.beginPath();ctx.arc(x,y,badgeR+2,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();ctx.clip();
+        ctx.drawImage(img,x-badgeR,y-badgeR,badgeR*2,badgeR*2);ctx.restore();
+      }
+    });
   }
-  // Inner gold ring
-  ctx.beginPath();ctx.arc(cx,cy,r-7,0,Math.PI*2);ctx.strokeStyle="#f1d46a";ctx.lineWidth=2;ctx.stroke();
+
+  for(let i=0;i<n;i++)drawSegment(i);
+  ctx.beginPath();ctx.arc(cx,cy,r-7,0,Math.PI*2);ctx.strokeStyle="#1785ff";ctx.lineWidth=2;ctx.stroke();
+
+  // Repaint when badges finish loading.
+  list.forEach(g=>{
+    [g.homeLogo,g.awayLogo].filter(Boolean).forEach(url=>{
+      const img=logos[url? (url===g.homeLogo?g.home:g.away):g.home];
+      if(img)img.onload=()=>drawWheel();
+    });
+  });
 }
+
 function setupWheel(){
   if(wheelGames.length<2)return;
   drawWheel();
