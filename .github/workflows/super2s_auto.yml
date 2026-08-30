@@ -45,7 +45,7 @@ jobs:
                   return json.loads(raw) if raw else None
 
           # Tuesday 08:00 UK: select the two games for the coming Friday-Monday window.
-          if NOW.weekday() == 1 and NOW.hour == 8:
+          if (NOW.weekday() == 1 and NOW.hour == 8) or os.environ.get('GITHUB_EVENT_NAME') == 'workflow_dispatch':
               days_until_friday = (4 - NOW.weekday()) % 7
               friday = (NOW + timedelta(days=days_until_friday)).date()
               monday = friday + timedelta(days=3)
