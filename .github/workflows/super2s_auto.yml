@@ -56,7 +56,7 @@ jobs:
               day=start.date()
               while day < end.date():
                   d=day.strftime('%Y%m%d')
-                  data=get_json(f'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates={d}')
+                  data=get_json(f'https://site.web.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates={d}')
                   for e in data.get('events',[]):
                       c=e.get('competitions',[{}])[0]
                       ts=e.get('date') or c.get('date')
@@ -113,7 +113,7 @@ jobs:
               target=datetime.fromisoformat(kick.replace('Z','+00:00')).astimezone(UK)
               if target > NOW: continue
               d=target.strftime('%Y%m%d')
-              data=get_json(f'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates={d}')
+              data=get_json(f'https://site.web.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates={d}')
               found=None
               for e in data.get('events',[]):
                   c=e.get('competitions',[{}])[0]
