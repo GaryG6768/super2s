@@ -49,7 +49,7 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
 
   <div class="card wheelCard">
     <div class="wheelTitle">🎡 SUPER 2s WHEEL</div>
-    <div class="wheelSub">Spin separately to reveal your two selected games</div>
+    <div class="wheelSub">All Friday–Monday Premier League fixtures · <span id="wheelCount">Loading fixtures…</span></div>
     <div class="wheelStage">
       <div class="pointer"></div>
       <div id="wheel" class="wheel">
@@ -60,7 +60,7 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
     <button class="btn spinBtn" id="spinBtn" disabled>SPIN 1</button>
     <div id="spinStatus" class="spinStatus"></div>
     <div id="selectedGame" class="selectedGame hidden"></div>
-    <div class="wheelHint">The central draw fixes the two games for everyone. The wheel is presentation only.</div>
+    <div class="wheelHint">All eligible Friday–Monday fixtures are shown. The central draw fixes the two winning games for everyone.</div>
   </div>
 
   <div class="card">
@@ -109,7 +109,7 @@ const SUPABASE_URL = "https://hwgxfgmmupnxhtviuqks.supabase.co";
 const SUPABASE_KEY = "sb_publishable_4MAxToZrtx1OUoLj5s6d1g_TC8rHqrM";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let currentWeek=null, playerId=null, currentGames=[];
+let currentWeek=null, playerId=null, currentGames=[], wheelGames=[];
 let spinCount=0, spinning=false;
 
 const $=id=>document.getElementById(id);
@@ -117,56 +117,69 @@ function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;',
 function msg(t){$("message").innerHTML='<div class="msg">'+esc(t)+'</div>'}
 function dateLabel(d){return new Intl.DateTimeFormat('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(d))}
 
+function initials(name){
+  return String(name||"").split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase();
+}
 function drawWheel(){
-  if(!currentGames.length)return;
+  const list=wheelGames;
+  if(!list.length)return;
   const canvas=$("wheelCanvas"), stage=$("wheel");
   const size=Math.min(350,Math.floor(window.innerWidth*.88));
   canvas.width=size*2; canvas.height=size*2;
   canvas.style.width="100%"; canvas.style.height="100%";
-  const ctx=canvas.getContext("2d"), r=size;
-  const cx=r,cy=r,n=currentGames.length;
+  const ctx=canvas.getContext("2d"), r=size, cx=r, cy=r, n=list.length;
   ctx.clearRect(0,0,size*2,size*2);
-  const gap=.018;
   for(let i=0;i<n;i++){
-    const a0=-Math.PI/2 + i*2*Math.PI/n + gap;
-    const a1=-Math.PI/2 + (i+1)*2*Math.PI/n - gap;
+    const a0=-Math.PI/2 + i*2*Math.PI/n + .006;
+    const a1=-Math.PI/2 + (i+1)*2*Math.PI/n - .006;
     ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r-4,a0,a1);ctx.closePath();
-    ctx.fillStyle=i%2===0?"#141414":"#242424";ctx.fill();
-    ctx.strokeStyle="#d4af37";ctx.lineWidth=3;ctx.stroke();
-    const mid=(a0+a1)/2;
-    ctx.save();ctx.translate(cx+Math.cos(mid)*r*.72,cy+Math.sin(mid)*r*.72);
+    ctx.fillStyle=i%2===0?"#111":"#202020";ctx.fill();
+    ctx.strokeStyle="#c9a227";ctx.lineWidth=Math.max(1.5,220/n);ctx.stroke();
+    const g=list[i], mid=(a0+a1)/2;
+    ctx.save();ctx.translate(cx+Math.cos(mid)*r*.67,cy+Math.sin(mid)*r*.67);
     ctx.rotate(mid+Math.PI/2);
-    ctx.fillStyle="#f4d77b";ctx.font="900 18px Arial";ctx.textAlign="center";
-    const g=currentGames[i];
-    const parts=(g.home+" v "+g.away).split(" ");
-    let label=g.home+" v "+g.away;
-    if(label.length>25) label=label.slice(0,24)+"…";
+    const fs=Math.max(9,Math.min(15,190/n));
+    ctx.font=`900 ${fs}px Arial`;ctx.textAlign="center";ctx.fillStyle="#f5df8b";
+    let label=(g.home+" v "+g.away);
+    if(label.length>27) label=label.slice(0,26)+"…";
     ctx.fillText(label,0,0);
-    ctx.font="900 14px Arial";ctx.fillStyle="#fff";ctx.fillText(dateLabel(g.kick).replace(",",""),0,22);
+    ctx.font=`700 ${Math.max(8,fs-2)}px Arial`;ctx.fillStyle="#fff";
+    ctx.fillText(dateLabel(g.kick).replace(/^[A-Za-z]{3},? /,""),0,fs+7);
     ctx.restore();
   }
+  // Inner gold ring
+  ctx.beginPath();ctx.arc(cx,cy,r-7,0,Math.PI*2);ctx.strokeStyle="#f1d46a";ctx.lineWidth=2;ctx.stroke();
 }
 function setupWheel(){
-  if(currentGames.length<2)return;
+  if(wheelGames.length<2)return;
   drawWheel();
   $("spinBtn").disabled=false;
   $("spinBtn").textContent="SPIN 1";
-  $("spinStatus").textContent="Choose the first game";
+  $("spinStatus").textContent="Spin to reveal Game 1";
   $("selectedGame").classList.add("hidden");
   spinCount=0;
 }
 function spinWheel(){
-  if(spinning || spinCount>=2 || currentGames.length<2)return;
-  spinning=true;$("spinBtn").disabled=true;$("spinStatus").textContent="Wheel spinning…";
-  const index=spinCount;
-  const n=currentGames.length;
-  const segment=360/n;
-  const target=-index*segment-segment/2;
+  if(spinning || spinCount>=2 || !wheelGames.length || currentGames.length<2)return;
+  spinning=true;$("spinBtn").disabled=true;$("spinStatus").textContent="Spinning…";
+  const targetGame=currentGames[spinCount];
+  let index=wheelGames.findIndex(g =>
+    g.home===targetGame.home && g.away===targetGame.away &&
+    Math.abs(new Date(g.kick)-new Date(targetGame.kick))<120000
+  );
+  if(index<0) index=spinCount;
+  const n=wheelGames.length, segment=360/n;
+  // Place the selected segment under the fixed pointer at the top.
+  const target=-(index*segment + segment/2);
+  const currentRotation=parseFloat($("wheel").dataset.rotation||"0");
   const turns=6+Math.floor(Math.random()*3);
-  $("wheel").style.transform="rotate("+(turns*360+target)+"deg)";
-  const game=currentGames[index];
+  const delta=turns*360 + target - (currentRotation%360);
+  const finalRotation=currentRotation+delta;
+  $("wheel").style.transform=`rotate(${finalRotation}deg)`;
+  $("wheel").dataset.rotation=String(finalRotation);
+  const game=targetGame;
   setTimeout(()=>{
-    $("selectedGame").innerHTML="<strong>Game "+(index+1)+": "+esc(game.home)+" v "+esc(game.away)+"</strong><small>"+dateLabel(game.kick)+"</small>";
+    $("selectedGame").innerHTML=`<strong>Game ${spinCount+1}: ${esc(game.home)} v ${esc(game.away)}</strong><small>${dateLabel(game.kick)}</small>`;
     $("selectedGame").classList.remove("hidden");
     spinCount++;spinning=false;
     if(spinCount<2){
@@ -174,11 +187,44 @@ function spinWheel(){
       $("spinStatus").textContent="Game 1 selected — spin again for Game 2";
     }else{
       $("spinBtn").textContent="TWO GAMES SELECTED ✓";
-      $("spinStatus").textContent="Your SUPER 2s games are revealed";
+      $("spinStatus").textContent="Both SUPER 2s games revealed";
     }
   },5400);
 }
-window.addEventListener("resize",()=>{if(currentGames.length)drawWheel();});
+window.addEventListener("resize",()=>{if(wheelGames.length)drawWheel();});
+
+async function loadAllWeekendGames(weekStart){
+  const base=new Date(weekStart+"T00:00:00");
+  const out=[];
+  for(let i=0;i<4;i++){
+    const d=new Date(base);d.setDate(base.getDate()+i);
+    const ds=d.toISOString().slice(0,10).replaceAll("-","");
+    try{
+      const res=await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates=${ds}`);
+      if(!res.ok)continue;
+      const data=await res.json();
+      for(const e of (data.events||[])){
+        const c=(e.competitions||[])[0]||{};
+        const teams=c.competitors||[];
+        if(teams.length!==2)continue;
+        const home=teams.find(x=>x.homeAway==="home")||teams[0];
+        const away=teams.find(x=>x.homeAway==="away")||teams[1];
+        const kick=e.date||c.date;
+        if(!kick)continue;
+        const dt=new Date(kick);
+        if(dt.getDay()===5||dt.getDay()===6||dt.getDay()===0||dt.getDay()===1){
+          out.push({
+            id:e.id,home:home.team?.displayName,away:away.team?.displayName,
+            kick:dt.toISOString(),
+            homeLogo:home.team?.logo||"",awayLogo:away.team?.logo||""
+          });
+        }
+      }
+    }catch(err){ console.warn("Fixture fetch failed",err); }
+  }
+  const seen=new Set();
+  return out.filter(g=>g.home&&g.away&&!seen.has(g.id)&&seen.add(g.id)).sort((a,b)=>new Date(a.kick)-new Date(b.kick));
+}
 
 async function loadWeek(){
   const {data,error}=await sb.from('weeks').select('*').order('week_start',{ascending:false}).limit(1).maybeSingle();
@@ -189,10 +235,24 @@ async function loadWeek(){
     {home:data.game1_home,away:data.game1_away,kick:data.game1_kickoff,n:1},
     {home:data.game2_home,away:data.game2_away,kick:data.game2_kickoff,n:2}
   ];
+
+  // The database stores the two central selections. The wheel itself displays
+  // every Premier League fixture from Friday through Monday.
+  wheelGames=await loadAllWeekendGames(data.week_start);
+  const selectedKeys=new Set(currentGames.map(g=>g.home+"|"+g.away));
+  if(wheelGames.length<2 || !currentGames.every(g=>wheelGames.some(x=>x.home===g.home&&x.away===g.away))){
+    // Never break the game if the public fixture feed is temporarily unavailable.
+    wheelGames=currentGames.map(g=>({...g}));
+  }
+  $("wheelCount").textContent=wheelGames.length+" eligible fixtures";
   renderGames();
   setupWheel();
   await loadWinner();
 }
+function renderGames(){
+  $("games").innerHTML=currentGames.map(g=>`<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div></div>`).join('');
+}
+
 function renderGames(){
   $("games").innerHTML=currentGames.map(g=>`<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div></div>`).join('');
 }
