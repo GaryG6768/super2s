@@ -26,23 +26,21 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
 @keyframes fall{to{transform:translateY(520px) rotate(540deg)}}
 .small{font-size:13px;color:#6b7280}.hidden{display:none}.listrow{padding:10px 0;border-bottom:1px solid #eee}.listrow:last-child{border-bottom:0}
 
-/* Professional wheel */
-.wheelCard{background:linear-gradient(145deg,#111827,#1f2937);color:#fff;text-align:center;padding:20px;border-radius:22px;box-shadow:0 8px 28px #00000025}
-.wheelTitle{font-size:24px;font-weight:800;margin-bottom:4px}
-.wheelSub{font-size:13px;color:#d1d5db;margin-bottom:16px}
-.wheelStage{position:relative;width:min(330px,82vw);height:min(330px,82vw);margin:0 auto 16px}
-.wheel{width:100%;height:100%;border-radius:50%;border:9px solid #d4af37;box-shadow:0 0 0 3px #fff,0 12px 28px #0008;position:relative;overflow:hidden;background:#e5e7eb;transition:transform 4.2s cubic-bezier(.12,.78,.16,1)}
-.wheel::before{content:"";position:absolute;inset:0;background:conic-gradient(from -45deg,#d4af37 0deg 90deg,#f7f7f7 90deg 180deg,#d4af37 180deg 270deg,#f7f7f7 270deg 360deg)}
-.wheelLabel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:55px 28px;text-align:center;font-weight:800;font-size:15px;color:#111827;line-height:1.15;z-index:2}
-.wheelLabel span{max-width:130px}
-.wheelHub{position:absolute;z-index:4;left:50%;top:50%;transform:translate(-50%,-50%);width:72px;height:72px;border-radius:50%;background:#111827;border:5px solid #d4af37;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;box-shadow:0 3px 12px #0008}
-.pointer{position:absolute;z-index:6;top:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:18px solid transparent;border-right:18px solid transparent;border-top:38px solid #d4af37;filter:drop-shadow(0 2px 2px #0008)}
-.spinBtn{background:#d4af37;color:#111827;font-size:19px;border-radius:14px;box-shadow:0 4px 0 #8b6a00}
-.spinBtn:active{transform:translateY(2px);box-shadow:0 2px 0 #8b6a00}
-.spinStatus{min-height:22px;margin-top:12px;font-weight:700;color:#f7e7a6}
-.selectedGame{margin-top:12px;background:#fff;color:#111827;border-radius:14px;padding:12px;text-align:left}
+/* Premium black-and-gold wheel */
+.wheelCard{background:radial-gradient(circle at 50% 25%,#252525 0,#111 42%,#050505 100%);color:#fff;text-align:center;padding:20px;border-radius:24px;border:1px solid #6f5720;box-shadow:0 12px 35px #0008}
+.wheelTitle{font-size:25px;font-weight:900;letter-spacing:1.2px;color:#f4d77b;margin-bottom:3px}
+.wheelSub{font-size:12px;color:#c9c9c9;margin-bottom:14px}
+.wheelStage{position:relative;width:min(350px,88vw);height:min(350px,88vw);margin:0 auto 16px}
+.wheel{width:100%;height:100%;border-radius:50%;border:10px solid #d4af37;box-shadow:0 0 0 2px #fff,0 14px 35px #000, inset 0 0 25px #000;position:relative;overflow:hidden;background:#111;transition:transform 5.2s cubic-bezier(.08,.78,.16,1)}
+.wheelCanvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%}
+.wheelHub{position:absolute;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);width:82px;height:82px;border-radius:50%;background:#090909;border:5px solid #d4af37;color:#f4d77b;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;line-height:1.05;box-shadow:0 0 18px #d4af3766,0 4px 14px #000}
+.pointer{position:absolute;z-index:7;top:-7px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:17px solid transparent;border-right:17px solid transparent;border-top:42px solid #d4af37;filter:drop-shadow(0 3px 3px #000)}
+.spinBtn{background:linear-gradient(#f5dc82,#c79c22);color:#090909;font-size:19px;border-radius:14px;box-shadow:0 4px 0 #765b0b;font-weight:900}
+.spinBtn:active{transform:translateY(2px);box-shadow:0 2px 0 #765b0b}
+.spinStatus{min-height:22px;margin-top:12px;font-weight:800;color:#f4d77b}
+.selectedGame{margin-top:12px;background:#fafafa;color:#111;border-radius:14px;padding:12px;text-align:left;border:2px solid #d4af37}
 .selectedGame strong{display:block;font-size:16px}.selectedGame small{color:#6b7280}
-.wheelHint{font-size:12px;color:#d1d5db;margin-top:10px}
+.wheelHint{font-size:12px;color:#aaa;margin-top:10px}
 </style>
 </head>
 <body>
@@ -55,7 +53,7 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
     <div class="wheelStage">
       <div class="pointer"></div>
       <div id="wheel" class="wheel">
-        <div class="wheelLabel"><span id="wheelLabel">Loading games…</span></div>
+        <canvas id="wheelCanvas" class="wheelCanvas"></canvas>
       </div>
       <div class="wheelHub">SUPER<br>2s</div>
     </div>
@@ -119,40 +117,68 @@ function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;',
 function msg(t){$("message").innerHTML='<div class="msg">'+esc(t)+'</div>'}
 function dateLabel(d){return new Intl.DateTimeFormat('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(d))}
 
+function drawWheel(){
+  if(!currentGames.length)return;
+  const canvas=$("wheelCanvas"), stage=$("wheel");
+  const size=Math.min(350,Math.floor(window.innerWidth*.88));
+  canvas.width=size*2; canvas.height=size*2;
+  canvas.style.width="100%"; canvas.style.height="100%";
+  const ctx=canvas.getContext("2d"), r=size;
+  const cx=r,cy=r,n=currentGames.length;
+  ctx.clearRect(0,0,size*2,size*2);
+  const gap=.018;
+  for(let i=0;i<n;i++){
+    const a0=-Math.PI/2 + i*2*Math.PI/n + gap;
+    const a1=-Math.PI/2 + (i+1)*2*Math.PI/n - gap;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r-4,a0,a1);ctx.closePath();
+    ctx.fillStyle=i%2===0?"#141414":"#242424";ctx.fill();
+    ctx.strokeStyle="#d4af37";ctx.lineWidth=3;ctx.stroke();
+    const mid=(a0+a1)/2;
+    ctx.save();ctx.translate(cx+Math.cos(mid)*r*.72,cy+Math.sin(mid)*r*.72);
+    ctx.rotate(mid+Math.PI/2);
+    ctx.fillStyle="#f4d77b";ctx.font="900 18px Arial";ctx.textAlign="center";
+    const g=currentGames[i];
+    const parts=(g.home+" v "+g.away).split(" ");
+    let label=g.home+" v "+g.away;
+    if(label.length>25) label=label.slice(0,24)+"…";
+    ctx.fillText(label,0,0);
+    ctx.font="900 14px Arial";ctx.fillStyle="#fff";ctx.fillText(dateLabel(g.kick).replace(",",""),0,22);
+    ctx.restore();
+  }
+}
 function setupWheel(){
   if(currentGames.length<2)return;
-  $("wheelLabel").innerHTML="<span>"+esc(currentGames[0].home)+"<br>v<br>"+esc(currentGames[0].away)+"</span>";
+  drawWheel();
   $("spinBtn").disabled=false;
   $("spinBtn").textContent="SPIN 1";
-  $("spinStatus").textContent="";
+  $("spinStatus").textContent="Choose the first game";
   $("selectedGame").classList.add("hidden");
+  spinCount=0;
 }
-
 function spinWheel(){
   if(spinning || spinCount>=2 || currentGames.length<2)return;
-  spinning=true;
-  $("spinBtn").disabled=true;
-  const game=currentGames[spinCount];
-  const turns=5+Math.floor(Math.random()*2);
-  const target=spinCount===0 ? 0 : 180;
+  spinning=true;$("spinBtn").disabled=true;$("spinStatus").textContent="Wheel spinning…";
+  const index=spinCount;
+  const n=currentGames.length;
+  const segment=360/n;
+  const target=-index*segment-segment/2;
+  const turns=6+Math.floor(Math.random()*3);
   $("wheel").style.transform="rotate("+(turns*360+target)+"deg)";
-  $("spinStatus").textContent="Spinning…";
+  const game=currentGames[index];
   setTimeout(()=>{
-    $("wheelLabel").innerHTML="<span>"+esc(game.home)+"<br>v<br>"+esc(game.away)+"</span>";
-    $("selectedGame").innerHTML="<strong>Game "+(spinCount+1)+": "+esc(game.home)+" v "+esc(game.away)+"</strong><small>"+dateLabel(game.kick)+"</small>";
+    $("selectedGame").innerHTML="<strong>Game "+(index+1)+": "+esc(game.home)+" v "+esc(game.away)+"</strong><small>"+dateLabel(game.kick)+"</small>";
     $("selectedGame").classList.remove("hidden");
-    spinCount++;
-    spinning=false;
+    spinCount++;spinning=false;
     if(spinCount<2){
-      $("spinBtn").disabled=false;
-      $("spinBtn").textContent="SPIN 2";
-      $("spinStatus").textContent="Game 1 selected — spin again";
+      $("spinBtn").disabled=false;$("spinBtn").textContent="SPIN 2";
+      $("spinStatus").textContent="Game 1 selected — spin again for Game 2";
     }else{
-      $("spinBtn").textContent="BOTH GAMES SELECTED ✓";
-      $("spinStatus").textContent="Your two SUPER 2s games are revealed";
+      $("spinBtn").textContent="TWO GAMES SELECTED ✓";
+      $("spinStatus").textContent="Your SUPER 2s games are revealed";
     }
-  },4300);
+  },5400);
 }
+window.addEventListener("resize",()=>{if(currentGames.length)drawWheel();});
 
 async function loadWeek(){
   const {data,error}=await sb.from('weeks').select('*').order('week_start',{ascending:false}).limit(1).maybeSingle();
