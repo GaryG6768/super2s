@@ -1,4 +1,4 @@
-name: .github/workflows/super2s_auto.yml
+name: Super 2s Automatic Fixtures
 
 on:
   workflow_dispatch:
