@@ -37,6 +37,11 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
 .pointer{position:absolute;z-index:7;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:17px solid transparent;border-right:17px solid transparent;border-top:40px solid #ef3d35;filter:drop-shadow(0 3px 3px #000)}
 .spinBtn{background:linear-gradient(#1688ff,#0756c7);color:#fff;font-size:19px;border-radius:14px;box-shadow:0 4px 0 #06377f;font-weight:900}
 .spinBtn:active{transform:translateY(2px);box-shadow:0 2px 0 #06377f}
+.spinRow{display:flex;gap:10px;margin-top:8px}
+.spinRow .btn{margin-top:0;flex:1}
+.spin1{background:linear-gradient(180deg,#1677ff,#0752b9);box-shadow:0 5px 0 #063b86}
+.spin2{background:linear-gradient(180deg,#17334f,#0c1d30);box-shadow:0 5px 0 #071321;color:#8293a8}
+.spin2.ready{background:linear-gradient(180deg,#1677ff,#0752b9);color:#fff;box-shadow:0 5px 0 #063b86}
 .spinStatus{min-height:22px;margin-top:12px;font-weight:800;color:#6fb5ff}
 .selectedGame{margin-top:12px;background:#f7fbff;color:#111;border-radius:14px;padding:12px;text-align:left;border:2px solid #1785ff}
 .selectedGame strong{display:block;font-size:16px}.selectedGame small{color:#6b7280}
@@ -46,9 +51,17 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
       .brand h1{font-size:34px}
       .wheelCard{padding:14px 8px}
       .wheelTitle{font-size:20px}
-      .wheelStage{width:310px;height:310px;max-width:82vw;max-height:82vw}
+      .wheelStage{width:370px;height:370px;max-width:92vw;max-height:92vw}
       .wheelHub{width:70px;height:70px;font-size:11px}
       .pointer{border-left-width:14px;border-right-width:14px;border-top-width:34px}
+    }
+@media(max-width:430px){
+      .wheelCard{padding:14px 6px}
+      .wheelStage{width:370px;height:370px;max-width:92vw;max-height:92vw}
+      .wheelTitle{font-size:21px}
+      .wheelSub{font-size:12px;line-height:1.4}
+      .spinRow{gap:8px}
+      .spinRow .btn{font-size:17px;padding:14px 8px}
     }
 </style>
 </head>
@@ -58,7 +71,7 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
 
   <div class="card wheelCard">
     <div class="wheelTitle">🎡 SUPER 2s WHEEL</div>
-    <div class="wheelSub">All Friday–Monday Premier League fixtures · <span id="wheelCount">Loading fixtures…</span></div>
+    <div class="wheelSub">10 Friday–Monday Premier League fixtures · <span id="wheelCount">Loading fixtures…</span></div>
     <div class="wheelStage">
       <div class="pointer"></div>
       <div id="wheel" class="wheel">
@@ -66,10 +79,13 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
       </div>
       <div class="wheelHub">SUPER<br>2s</div>
     </div>
-    <button class="btn spinBtn" id="spinBtn" disabled>SPIN 1</button>
+    <div class="spinRow">
+      <button class="btn spinBtn spin1" id="spinBtn1" disabled>SPIN 1</button>
+      <button class="btn spinBtn spin2" id="spinBtn2" disabled>SPIN 2</button>
+    </div>
     <div id="spinStatus" class="spinStatus"></div>
     <div id="selectedGame" class="selectedGame hidden"></div>
-    <div class="wheelHint">All eligible Friday–Monday fixtures are shown. The central draw fixes the two winning games for everyone.</div>
+    <div class="wheelHint">10 eligible Friday–Monday fixtures are shown. The central draw fixes the two winning games for everyone.</div>
   </div>
 
   <div class="card">
@@ -199,44 +215,71 @@ function drawWheel(){
 function setupWheel(){
   if(wheelGames.length<2)return;
   drawWheel();
-  $("spinBtn").disabled=false;
-  $("spinBtn").textContent="SPIN 1";
-  $("spinStatus").textContent="Spin to reveal Game 1";
+  $("spinBtn1").disabled=false;
+  $("spinBtn2").disabled=true;
+  $("spinBtn2").classList.remove("ready");
+  $("spinStatus").textContent="Spin 1 to select your first game";
   $("selectedGame").classList.add("hidden");
+  $("selectedGame").innerHTML="";
   spinCount=0;
+  spinning=false;
+  $("wheel").dataset.rotation="0";
+  $("wheel").style.transform="rotate(0deg)";
 }
-function spinWheel(){
+
+function spinWheel(which){
   if(spinning || spinCount>=2 || !wheelGames.length || currentGames.length<2)return;
-  spinning=true;$("spinBtn").disabled=true;$("spinStatus").textContent="Spinning…";
+  if(which !== spinCount+1)return;
+
+  spinning=true;
+  $("spinBtn1").disabled=true;
+  $("spinBtn2").disabled=true;
+  $("spinStatus").textContent=`Spinning ${which}…`;
+
   const targetGame=currentGames[spinCount];
   let index=wheelGames.findIndex(g =>
     g.home===targetGame.home && g.away===targetGame.away &&
     Math.abs(new Date(g.kick)-new Date(targetGame.kick))<120000
   );
-  if(index<0) index=spinCount;
+  if(index<0) index=spinCount % wheelGames.length;
+
   const n=wheelGames.length, segment=360/n;
-  // Place the selected segment under the fixed pointer at the top.
   const target=-(index*segment + segment/2);
   const currentRotation=parseFloat($("wheel").dataset.rotation||"0");
+  const currentMod=((currentRotation%360)+360)%360;
   const turns=6+Math.floor(Math.random()*3);
-  const delta=turns*360 + target - (currentRotation%360);
+  const delta=turns*360 + target - currentMod;
   const finalRotation=currentRotation+delta;
+
+  $("wheel").style.transition="transform 5.2s cubic-bezier(.08,.78,.16,1)";
   $("wheel").style.transform=`rotate(${finalRotation}deg)`;
   $("wheel").dataset.rotation=String(finalRotation);
-  const game=targetGame;
+
   setTimeout(()=>{
-    $("selectedGame").innerHTML=`<strong>Game ${spinCount+1}: ${esc(game.home)} v ${esc(game.away)}</strong><small>${dateLabel(game.kick)}</small>`;
+    $("selectedGame").innerHTML +=
+      `<div style="margin:7px 0"><strong>Game ${which}: ${esc(targetGame.home)} v ${esc(targetGame.away)}</strong><small>${dateLabel(targetGame.kick)}</small></div>`;
     $("selectedGame").classList.remove("hidden");
-    spinCount++;spinning=false;
-    if(spinCount<2){
-      $("spinBtn").disabled=false;$("spinBtn").textContent="SPIN 2";
-      $("spinStatus").textContent="Game 1 selected — spin again for Game 2";
+
+    spinCount++;
+    spinning=false;
+
+    if(spinCount===1){
+      $("spinBtn2").disabled=false;
+      $("spinBtn2").classList.add("ready");
+      $("spinStatus").textContent="Game 1 selected — now spin for Game 2";
     }else{
-      $("spinBtn").textContent="TWO GAMES SELECTED ✓";
-      $("spinStatus").textContent="Both SUPER 2s games revealed";
+      $("spinBtn1").disabled=true;
+      $("spinBtn2").disabled=true;
+      $("spinBtn2").classList.remove("ready");
+      $("spinBtn2").textContent="SELECTED ✓";
+      $("spinStatus").textContent="Both SUPER 2s games selected";
     }
   },5400);
 }
+
+$("spinBtn1").addEventListener("click",()=>spinWheel(1));
+$("spinBtn2").addEventListener("click",()=>spinWheel(2));
+
 window.addEventListener("resize",()=>{if(wheelGames.length)drawWheel();});
 
 async function loadAllWeekendGames(weekStart){
@@ -282,15 +325,20 @@ async function loadWeek(){
     {home:data.game2_home,away:data.game2_away,kick:data.game2_kickoff,n:2}
   ];
 
-  // The database stores the two central selections. The wheel itself displays
-  // every Premier League fixture from Friday through Monday.
-  wheelGames=await loadAllWeekendGames(data.week_start);
+  // Show exactly 10 eligible fixtures on the wheel, while always keeping
+  // the two centrally selected games on it.
+  const allWheelGames=await loadAllWeekendGames(data.week_start);
   const selectedKeys=new Set(currentGames.map(g=>g.home+"|"+g.away));
-  if(wheelGames.length<2 || !currentGames.every(g=>wheelGames.some(x=>x.home===g.home&&x.away===g.away))){
-    // Never break the game if the public fixture feed is temporarily unavailable.
-    wheelGames=currentGames.map(g=>({...g}));
+  const selectedOnWheel=allWheelGames.filter(g=>selectedKeys.has(g.home+"|"+g.away));
+  const others=allWheelGames.filter(g=>!selectedKeys.has(g.home+"|"+g.away));
+  wheelGames=[...selectedOnWheel,...others].slice(0,10);
+
+  // If the public fixture feed is temporarily unavailable, keep the game playable.
+  if(!currentGames.every(g=>wheelGames.some(x=>x.home===g.home&&x.away===g.away))){
+    wheelGames=[...currentGames.map(g=>({...g})),...others].slice(0,10);
   }
-  $("wheelCount").textContent=wheelGames.length+" eligible fixtures";
+
+  $("wheelCount").textContent=wheelGames.length+" fixtures";
   renderGames();
   setupWheel();
   await loadWinner();
