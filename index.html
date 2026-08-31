@@ -206,40 +206,101 @@ function setupWheel(){
   spinCount=0;
 }
 function spinWheel(){
-  if(spinning || spinCount>=2 || !wheelGames.length || currentGames.length<2)return;
-  spinning=true;$("spinBtn").disabled=true;$("spinStatus").textContent="Spinning…";
-  let targetGame=currentGames[spinCount];
-  if(which===2 && targetGame && currentGames[0] &&
-     targetGame.home===currentGames[0].home && targetGame.away===currentGames[0].away){
-    targetGame=wheelGames.find(g=>g.home!==currentGames[0].home || g.away!==currentGames[0].away) || targetGame;
+  if(spinning || spinCount>=2 || wheelGames.length<2)return;
+
+  spinning=true;
+  $("spinBtn").disabled=true;
+  $("spinStatus").textContent="Spinning…";
+
+  // Game 1 is the first centrally selected game.
+  // Game 2 is the second centrally selected game.
+  const targetGame=currentGames[spinCount];
+
+  if(!targetGame){
+    spinning=false;
+    $("spinBtn").disabled=false;
+    return;
   }
+
+  // Find the target fixture on the 10-fixture wheel.
   let index=wheelGames.findIndex(g =>
-    g.home===targetGame.home && g.away===targetGame.away &&
-    Math.abs(new Date(g.kick)-new Date(targetGame.kick))<120000
+    g.home===targetGame.home &&
+    g.away===targetGame.away
   );
-  if(index<0) index=spinCount;
-  const n=wheelGames.length, segment=360/n;
-  // Place the selected segment under the fixed pointer at the top.
+
+  if(index<0){
+    index=0;
+  }
+
+  const n=wheelGames.length;
+  const segment=360/n;
+
+  // Put the selected fixture under the red pointer.
   const target=-(index*segment + segment/2);
-  const currentRotation=parseFloat($("wheel").dataset.rotation||"0");
+
+  const currentRotation=
+    parseFloat($("wheel").dataset.rotation || "0");
+
+  const currentMod=
+    ((currentRotation % 360)+360)%360;
+
+  const adjustment=
+    ((target-currentMod)+360)%360;
+
   const turns=6+Math.floor(Math.random()*3);
-  const delta=turns*360 + target - (currentRotation%360);
-  const finalRotation=currentRotation+delta;
-  $("wheel").style.transform=`rotate(${finalRotation}deg)`;
-  $("wheel").dataset.rotation=String(finalRotation);
-  const game=targetGame;
-  setTimeout(()=>{
-    $("selectedGame").innerHTML=`<strong>Game ${spinCount+1}: ${esc(game.home)} v ${esc(game.away)}</strong><small>${dateLabel(game.kick)}</small>`;
+
+  const finalRotation=
+    currentRotation+(turns*360)+adjustment;
+
+  $("wheel").style.transition=
+    "transform 5.3s cubic-bezier(.08,.78,.16,1)";
+
+  $("wheel").style.transform=
+    "rotate("+finalRotation+"deg)";
+
+  $("wheel").dataset.rotation=
+    String(finalRotation);
+
+  setTimeout(function(){
+
+    spinCount++;
+    spinning=false;
+
+    // Redraw the wheel so Game 1 becomes solid yellow.
+    drawWheel();
+
     $("selectedGame").classList.remove("hidden");
-    spinCount++;spinning=false;
-    if(spinCount<2){
-      $("spinBtn").disabled=false;$("spinBtn").textContent="SPIN 2";
-      $("spinStatus").textContent="Game 1 selected — spin again for Game 2";
+
+    if(spinCount===1){
+
+      $("selectedGame").innerHTML=
+        '<div style="background:#ffd400;color:#07111f;padding:12px;border-radius:10px;font-weight:900">'+
+        'GAME 1: '+esc(targetGame.home)+' v '+esc(targetGame.away)+
+        '<small style="display:block;margin-top:4px">'+
+        dateLabel(targetGame.kick)+
+        '</small></div>';
+
+      $("spinBtn").disabled=false;
+      $("spinBtn").textContent="SPIN 2";
+      $("spinStatus").textContent=
+        "Game 1 selected — spin again for Game 2";
+
     }else{
-      $("spinBtn").textContent="TWO GAMES SELECTED ✓";
-      $("spinStatus").textContent="Both SUPER 2s games revealed";
+
+      $("selectedGame").innerHTML+=
+        '<div style="margin-top:8px;background:#ffd400;color:#07111f;padding:12px;border-radius:10px;font-weight:900">'+
+        'GAME 2: '+esc(targetGame.home)+' v '+esc(targetGame.away)+
+        '<small style="display:block;margin-top:4px">'+
+        dateLabel(targetGame.kick)+
+        '</small></div>';
+
+      $("spinBtn").disabled=true;
+      $("spinBtn").textContent="BOTH GAMES SELECTED ✓";
+      $("spinStatus").textContent=
+        "Both SUPER 2s games selected";
     }
-  },5400);
+
+  },5500);
 }
 window.addEventListener("resize",()=>{if(wheelGames.length)drawWheel();});
 
