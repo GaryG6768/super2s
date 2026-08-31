@@ -2,161 +2,130 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SUPER 2s — Original Blue Wheel</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SUPER 2s</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:#f5f6f8;color:#111827;overflow-x:hidden}
-.wrap{width:100%;max-width:560px;margin:auto;padding:12px;overflow-x:hidden}
-.brand{text-align:center;margin:8px 0 16px}
-.brand h1{margin:0;font-size:38px;letter-spacing:1px}.brand p{margin:4px 0;color:#6b7280}
-.card{background:white;border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 3px 14px #00000010}
-h2{margin:0 0 12px;font-size:20px}.game{border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin:10px 0}
-.game b{display:block;font-size:17px}.kick{color:#6b7280;font-size:13px;margin-top:5px}
+.wrap{width:100%;max-width:620px;margin:auto;padding:12px}
+.brand{text-align:center;margin:10px 0 16px}.brand h1{margin:0;font-size:40px;letter-spacing:1px}.brand p{margin:5px 0;color:#6b7280;font-size:18px}
+.card{background:#fff;border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 3px 14px #00000010}
+h2{margin:0 0 12px;font-size:22px}.game{border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin:10px 0}.game b{display:block;font-size:17px}.kick{color:#6b7280;font-size:14px;margin-top:5px}
 label{font-size:14px;font-weight:700;display:block;margin:12px 0 5px}
-input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:17px}
+input{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:10px;font-size:17px}
 .score{display:flex;gap:10px}.score input{text-align:center}
-.btn{width:100%;border:0;border-radius:12px;padding:14px;font-size:17px;font-weight:700;margin-top:14px;background:#111827;color:#fff}
-.btn:disabled{opacity:.5}.msg{padding:12px;border-radius:10px;background:#f3f4f6;margin-top:12px}
+.btn{width:100%;border:0;border-radius:12px;padding:14px;font-size:17px;font-weight:800;margin-top:14px;background:#111827;color:#fff}
+.btn:disabled{opacity:.5}.msg{padding:12px;border-radius:10px;background:#f3f4f6;margin-top:12px}.small{font-size:13px;color:#6b7280}
+.hidden{display:none}.listrow{padding:10px 0;border-bottom:1px solid #eee}.listrow:last-child{border-bottom:0}
 .winner{display:none;text-align:center;background:#f7fbff;border:2px solid #1785ff;position:relative;overflow:hidden}
 .trophy{font-size:92px;animation:bounce 1.2s infinite alternate}.gold{color:#0756c7}.pred{margin:8px 0;font-weight:700}
 @keyframes bounce{to{transform:translateY(-8px) scale(1.04)}}
-.confetti{position:absolute;inset:0;pointer-events:none}.confetti i{position:absolute;top:-20px;width:7px;height:14px;background:#1785ff;animation:fall 3s linear infinite}.confetti i:nth-child(2n){background:#6fb5ff}
-@keyframes fall{to{transform:translateY(520px) rotate(540deg)}}
-.small{font-size:13px;color:#6b7280}.accessCard{background:#eef6ff;border:2px solid #1785ff}.hidden{display:none}.listrow{padding:10px 0;border-bottom:1px solid #eee}.listrow:last-child{border-bottom:0}
+.confetti{position:absolute;inset:0;pointer-events:none}.confetti i{position:absolute;top:-20px;width:7px;height:14px;background:#1785ff;animation:fall 3s linear infinite}
+.confetti i:nth-child(2n){background:#6fb5ff}@keyframes fall{to{transform:translateY(520px) rotate(540deg)}}
+
+/* Professional original-style blue wheel */
 .wheelCard{background:radial-gradient(circle at 50% 20%,#16253d 0,#0a1220 48%,#02050b 100%);color:#fff;text-align:center;padding:18px;border-radius:24px;border:1px solid #183b67;box-shadow:0 12px 35px #0009}
-.wheelTitle{font-size:23px;font-weight:900;letter-spacing:.5px;color:#fff;margin-bottom:3px}
-.wheelSub{font-size:12px;color:#b9c7d9;margin-bottom:14px;line-height:1.35}
-.wheelStage{position:relative;width:min(430px,94vw);height:min(430px,94vw);margin:0 auto 16px}
-.wheel{width:100%;height:100%;border-radius:50%;border:7px solid #d9e2ee;box-shadow:0 0 0 2px #1d7cf2,0 14px 35px #000,inset 0 0 28px #000;position:relative;overflow:hidden;background:#07111f;transition:transform 5.2s cubic-bezier(.08,.78,.16,1)}
-.wheelCanvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%}
-.wheelHub{position:absolute;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);width:84px;height:84px;border-radius:50%;background:radial-gradient(circle,#17263a,#050a12);border:4px solid #1785ff;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;line-height:1.05;box-shadow:0 0 20px #1785ff66,0 4px 14px #000}
-.pointer{position:absolute;z-index:7;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:17px solid transparent;border-right:17px solid transparent;border-top:40px solid #ef3d35;filter:drop-shadow(0 3px 3px #000)}
-.spinBtn{background:linear-gradient(#1688ff,#0756c7);color:#fff;font-size:19px;border-radius:14px;box-shadow:0 4px 0 #06377f;font-weight:900}
-.spinBtn:active{transform:translateY(2px);box-shadow:0 2px 0 #06377f}
-.spinRow{display:flex;gap:10px;margin-top:8px}.spinRow .btn{margin-top:0;flex:1}
-.spin2{background:linear-gradient(180deg,#17334f,#0c1d30);box-shadow:0 5px 0 #071321;color:#8293a8}
-.spin2.ready{background:linear-gradient(180deg,#1677ff,#0752b9);color:#fff;box-shadow:0 5px 0 #063b86}
-.spinStatus{min-height:22px;margin-top:12px;font-weight:800;color:#6fb5ff}
-.selectedGame{margin-top:12px;background:#f7fbff;color:#111;border-radius:14px;padding:12px;text-align:left;border:2px solid #1785ff}
-.selectedGame strong{display:block;font-size:16px}.selectedGame small{display:block;color:#6b7280;margin-top:3px}
-.wheelHint{font-size:12px;color:#b9c7d9;margin-top:10px}
+.wheelTitle{font-size:28px;font-weight:900;letter-spacing:.5px;margin-bottom:5px}
+.wheelSub{font-size:15px;color:#c7d3e2;margin-bottom:14px;line-height:1.35}
+.wheelStage{position:relative;width:min(560px,94vw);height:min(560px,94vw);margin:0 auto 16px}
+.wheel{width:100%;height:100%;border-radius:50%;border:7px solid #d9e2ee;box-shadow:0 0 0 2px #1d7cf2,0 14px 35px #000,inset 0 0 28px #000;position:relative;overflow:hidden;background:#07111f}
+.wheelCanvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;transition:transform 5.4s cubic-bezier(.08,.78,.16,1)}
+.wheelHub{position:absolute;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);width:92px;height:92px;border-radius:50%;background:radial-gradient(circle,#17263a,#050a12);border:4px solid #1785ff;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;line-height:1.05;box-shadow:0 0 20px #1785ff66,0 4px 14px #000}
+.pointer{position:absolute;z-index:7;top:-7px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:20px solid transparent;border-right:20px solid transparent;border-top:46px solid #ef3d35;filter:drop-shadow(0 3px 3px #000)}
+.spinRow{display:flex;gap:12px}.spinBtn{flex:1;background:linear-gradient(#1688ff,#0756c7);color:#fff;font-size:19px;border-radius:14px;box-shadow:0 5px 0 #06377f;font-weight:900}.spinBtn:active{transform:translateY(2px)}
+.spin2.ready{background:linear-gradient(#1688ff,#0756c7);color:#fff}
+.spinStatus{min-height:28px;margin-top:14px;font-weight:900;color:#6fb5ff;font-size:18px}
+.selectedGame{margin-top:12px;background:#f7fbff;color:#111;border-radius:14px;padding:12px;text-align:left;border:2px solid #1785ff}.selectedGame strong{display:block;font-size:17px}.selectedGame small{color:#6b7280}
+.wheelHint{font-size:13px;color:#b9c7d9;margin-top:12px;line-height:1.4}
+.accessCard{background:#eef6ff;border:2px solid #1785ff}
+.accessOk{background:#e9fff2!important;border-color:#18a957!important}
+.unlockBtn{background:linear-gradient(#1688ff,#0756c7)}
 @media(max-width:430px){
-  .wrap{padding:10px}.brand h1{font-size:34px}.wheelCard{padding:14px 6px}
-  .wheelTitle{font-size:21px}.wheelSub{font-size:12px;line-height:1.4}
-  .wheelStage{width:94vw;height:94vw}.wheelHub{width:70px;height:70px;font-size:11px}
-  .pointer{border-left-width:14px;border-right-width:14px;border-top-width:34px}
-  .spinRow{gap:8px}.spinRow .btn{font-size:17px;padding:14px 8px}
+ .wrap{padding:8px}.brand h1{font-size:34px}.brand p{font-size:16px}
+ .wheelCard{padding:14px 7px}.wheelTitle{font-size:23px}.wheelSub{font-size:13px}
+ .wheelStage{width:94vw;height:94vw;max-width:430px;max-height:430px}
+ .wheelHub{width:76px;height:76px;font-size:13px}.pointer{border-left-width:16px;border-right-width:16px;border-top-width:38px}
+ .spinRow{gap:8px}.spinBtn{font-size:16px;padding:14px 7px}
 }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <div class="brand">
-    <h1>SUPER 2s</h1>
-    <p>Predict both exact scores</p>
+<div class="brand"><h1>SUPER 2s</h1><p>Predict both exact scores</p></div>
+
+<div class="card wheelCard">
+  <div class="wheelTitle">🎡 SUPER 2s WHEEL</div>
+  <div class="wheelSub">10 Friday–Monday Premier League fixtures · <span id="wheelCount">Loading fixtures…</span></div>
+
+  <div class="wheelStage" id="wheelStage">
+    <div class="pointer"></div>
+    <div id="wheel" class="wheel">
+      <canvas id="wheelCanvas" class="wheelCanvas"></canvas>
+    </div>
+    <div class="wheelHub">SUPER<br>2s</div>
   </div>
 
-  <div class="card wheelCard">
-    <div class="wheelTitle">🎡 SUPER 2s WHEEL</div>
-    <div class="wheelSub">
-      10 Friday–Monday Premier League fixtures ·
-      <span id="wheelCount">Loading fixtures…</span>
-    </div>
-
-    <div class="wheelStage" id="wheelStage">
-      <div class="pointer"></div>
-
-      <div id="wheel" class="wheel">
-        <canvas id="wheelCanvas" class="wheelCanvas"></canvas>
-      </div>
-
-      <div class="wheelHub">SUPER<br>2s</div>
-    </div>
-
-    <div class="spinRow">
-      <button class="btn spinBtn spin1" id="spinBtn1" type="button" disabled>
-        SPIN GAME 1
-      </button>
-
-      <button class="btn spinBtn spin2" id="spinBtn2" type="button" disabled>
-        SPIN GAME 2
-      </button>
-    </div>
-
-    <button class="btn" id="newWeekBtn" type="button" style="background:#17334f;margin-top:10px">NEW WEEK</button>
-    <div id="spinStatus" class="spinStatus">Loading wheel…</div>
-
-    <div id="selectedGame" class="selectedGame hidden"></div>
-
-    <div class="wheelHint">
-      All 10 eligible Friday–Monday fixtures are shown.
-      Spin once for Game 1, then again for Game 2.
-      Game 1 becomes solid yellow after Spin 1.
-    </div>
+  <div class="spinRow">
+    <button class="btn spinBtn" id="spinBtn1" type="button" disabled>SPIN GAME 1</button>
+    <button class="btn spinBtn spin2" id="spinBtn2" type="button" disabled>SPIN GAME 2</button>
   </div>
 
-  <div class="card">
-    <h2>🎡 This week's games</h2>
-    <div id="games"><div class="msg">Loading fixtures…</div></div>
-    <div class="small">
-      Games are selected centrally. Both kick-offs must be at least 2 hours apart
-      and fixtures must be Friday–Monday.
-    </div>
-  </div>
+  <button class="btn" id="newWeekBtn" type="button" style="background:#17334f">NEW WEEK</button>
+  <div id="spinStatus" class="spinStatus">Loading wheel…</div>
+  <div id="selectedGame" class="selectedGame hidden"></div>
+  <div class="wheelHint">All 10 eligible Friday–Monday fixtures are shown. Spin once for Game 1, then again for Game 2. Game 1 is solid yellow and Game 2 is solid green.</div>
+</div>
 
-  <div class="card" id="accessCard" style="background:#eef6ff;border:2px solid #1785ff">
+<div class="card">
+  <h2>🎡 This week's games</h2>
+  <div id="games"><div class="msg">Loading fixtures…</div></div>
+  <div class="small">Games are selected centrally. Both kick-offs must be at least 2 hours apart and fixtures must be Friday–Monday.</div>
+</div>
+
+<div class="card accessCard" id="accessCard">
   <h2>🔐 Enter the SUPER 2s PIN</h2>
-  <div class="small">You must enter the PIN supplied by the organiser before you can enter a prediction.</div>
+  <div class="small">Enter the PIN supplied by the organiser before you can spin the wheel or enter a prediction.</div>
   <label>Game PIN</label>
-  <input id="gamePin" inputmode="numeric" maxlength="4" placeholder="Enter 4-digit game PIN">
-  <button class="btn" id="unlockBtn" type="button">UNLOCK GAME</button>
+  <input id="gamePin" inputmode="numeric" maxlength="4" placeholder="4-digit Game PIN">
+  <button class="btn unlockBtn" id="unlockBtn" type="button">UNLOCK GAME</button>
   <div id="accessMessage"></div>
 </div>
 
-<div class="card" id="loginCard" style="display:none">
-    <h2>📝 Your prediction</h2>
+<div class="card hidden" id="loginCard">
+  <h2>📝 Your prediction</h2>
+  <label>Your unique name</label>
+  <input id="name" autocomplete="name" placeholder="Enter your name">
+  <label>Your 4-digit PIN</label>
+  <input id="pin" inputmode="numeric" maxlength="4" placeholder="4 digits">
+  <div class="small" style="margin-top:6px">First time? Your name and PIN will create your player account.</div>
 
-    <label>Your unique name</label>
-    <input id="name" autocomplete="name" placeholder="Enter your name">
-
-    <label>Your 4-digit PIN</label>
-    <input id="pin" inputmode="numeric" maxlength="4" placeholder="4 digits">
-
-    <div id="existingHelp" class="small" style="margin-top:6px">
-      First time? Your name and PIN will create your player account.
-    </div>
-
-    <div id="predForm" class="hidden">
-      <div id="predGames"></div>
-      <button class="btn" id="submitBtn" type="button">
-        🔒 SUBMIT &amp; LOCK PREDICTIONS
-      </button>
-    </div>
-
-    <button class="btn" id="continueBtn" type="button">Continue</button>
-    <div id="message"></div>
+  <div id="predForm" class="hidden">
+    <div id="predGames"></div>
+    <button class="btn" id="submitBtn" type="button">🔒 SUBMIT &amp; LOCK PREDICTIONS</button>
   </div>
+  <button class="btn" id="continueBtn" type="button">Continue</button>
+  <div id="message"></div>
+</div>
 
-  <div class="card hidden" id="submittedCard">
-    <h2>✅ Your predictions are locked</h2>
-    <div id="myPrediction"></div>
-    <p class="small">Your predictions cannot be changed after submission.</p>
-  </div>
+<div class="card hidden" id="submittedCard">
+  <h2>✅ Your predictions are locked</h2>
+  <div id="myPrediction"></div>
+  <p class="small">Your predictions cannot be changed after submission.</p>
+</div>
 
-  <div class="card hidden" id="othersCard">
-    <h2>📋 Submitted predictions</h2>
-    <div id="others"></div>
-  </div>
+<div class="card hidden" id="othersCard">
+  <h2>📋 Submitted predictions</h2>
+  <div id="others"></div>
+</div>
 
-  <div class="card winner" id="winnerCard">
-    <div class="confetti" id="confetti"></div>
-    <div class="trophy">🏆</div>
-    <h2 class="gold">SUPER 2s WINNER!</h2>
-    <div id="winnerText"></div>
-  </div>
+<div class="card winner" id="winnerCard">
+  <div class="confetti" id="confetti"></div>
+  <div class="trophy">🏆</div>
+  <h2 class="gold">SUPER 2s WINNER!</h2>
+  <div id="winnerText"></div>
+</div>
 
 </div>
 
@@ -164,185 +133,431 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
 const SUPABASE_URL="https://hwgxfgmmupnxhtviuqks.supabase.co";
 const SUPABASE_KEY="sb_publishable_4MAxToZrtx1OUoLj5s6d1g_TC8rHqrM";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const GAME_ACCESS_PIN="2580"; // Change this 4-digit organiser PIN if required.
-let gameUnlocked=false;
 
-let currentWeek=null,playerId=null,currentGames=[],wheelGames=[],spinCount=0,spinning=false,wheelRotation=0;
+/* ORGANISER GAME PIN */
+const GAME_ACCESS_PIN="2580";
+
+let currentWeek=null,playerId=null,currentGames=[],wheelGames=[];
+let spinCount=0,spinning=false,wheelRotation=0,selectedIndex1=-1,selectedIndex2=-1,gameUnlocked=false;
+
 const $=id=>document.getElementById(id);
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
-function msg(t){$("message").innerHTML='<div class="msg">'+esc(t)+"</div>"}
+function msg(t){$("message").innerHTML='<div class="msg">'+esc(t)+'</div>'}
 function dateLabel(d){return new Intl.DateTimeFormat("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}).format(new Date(d))}
 
 function drawWheel(){
   const list=wheelGames,canvas=$("wheelCanvas"),stage=$("wheelStage");
   if(!canvas||!stage||!list.length)return;
-  const n=list.length,size=Math.max(300,Math.min(430,Math.floor(innerWidth*.94)));
-  stage.style.width=size+"px";stage.style.height=size+"px";
-  canvas.width=size*2;canvas.height=size*2;
-  const ctx=canvas.getContext("2d"),r=size,cx=r,cy=r,seg=Math.PI*2/n;
+
+  const n=list.length;
+  const size=Math.max(320,Math.min(560,Math.floor(window.innerWidth*.94)));
+  stage.style.width=size+"px";
+  stage.style.height=size+"px";
+  canvas.width=size*2;
+  canvas.height=size*2;
+
+  const ctx=canvas.getContext("2d");
+  const r=size,cx=r,cy=r,seg=Math.PI*2/n;
   ctx.clearRect(0,0,size*2,size*2);
+
   const colours=["#0b1d35","#12345a","#0b2442","#173e67","#0a1a31","#16436f"];
 
   list.forEach((g,i)=>{
-    const a0=-Math.PI/2+i*seg+.008,a1=-Math.PI/2+(i+1)*seg-.008,mid=(a0+a1)/2;
-    const g1=spinCount>=1&&currentGames[0]&&g.home===currentGames[0].home&&g.away===currentGames[0].away;
-    const g2=spinCount>=2&&currentGames[1]&&g.home===currentGames[1].home&&g.away===currentGames[1].away;
-    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r-5,a0,a1);ctx.closePath();
-    ctx.fillStyle=g1?"#ffd400":g2?"#18c96b":colours[i%colours.length];ctx.fill();
-    ctx.strokeStyle=(g1||g2)?"#fff":"#8ea4bd";ctx.lineWidth=(g1||g2)?4:2;ctx.stroke();
+    const a0=-Math.PI/2+i*seg+.006;
+    const a1=-Math.PI/2+(i+1)*seg-.006;
+    const mid=(a0+a1)/2;
+    const isGame1=i===selectedIndex1;
+    const isGame2=i===selectedIndex2;
 
-    const fs=Math.max(8,Math.min(15,210/n));
-    ctx.save();ctx.translate(cx+Math.cos(mid)*r*.70,cy+Math.sin(mid)*r*.70);
-    ctx.rotate(mid+Math.PI/2);ctx.textAlign="center";ctx.textBaseline="middle";
-    ctx.fillStyle=(g1||g2)?"#07111f":"#fff";ctx.font=`900 ${fs}px Arial`;
-    let label=g.home+" v "+g.away;if(label.length>30)label=label.slice(0,29)+"…";
-    ctx.fillText(label,0,-5);
-    ctx.fillStyle=(g1||g2)?"#07111f":"#39a1ff";ctx.font=`900 ${Math.max(8,fs-1)}px Arial`;
-    ctx.fillText(dateLabel(g.kick).replace(/^[A-Za-z]{3},?\s*/,""),0,fs+7);
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r-5,a0,a1);
+    ctx.closePath();
+    ctx.fillStyle=isGame1?"#ffd400":isGame2?"#18c96b":colours[i%colours.length];
+    ctx.fill();
+    ctx.strokeStyle=(isGame1||isGame2)?"#ffffff":"#8ea4bd";
+    ctx.lineWidth=(isGame1||isGame2)?4:2;
+    ctx.stroke();
+
+    const fs=Math.max(9,Math.min(16,215/n));
+    ctx.save();
+    ctx.translate(cx+Math.cos(mid)*r*.69,cy+Math.sin(mid)*r*.69);
+    ctx.rotate(mid+Math.PI/2);
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+
+    ctx.fillStyle=(isGame1||isGame2)?"#07111f":"#ffffff";
+    ctx.font=`900 ${fs}px Arial`;
+    let label=(g.home||"")+" v "+(g.away||"");
+    if(label.length>31)label=label.slice(0,30)+"…";
+    ctx.fillText(label,0,-6);
+
+    ctx.fillStyle=(isGame1||isGame2)?"#07111f":"#39a1ff";
+    ctx.font=`900 ${Math.max(8,fs-1)}px Arial`;
+    ctx.fillText(dateLabel(g.kick).replace(/^[A-Za-z]{3},?\s*/,""),0,fs+8);
     ctx.restore();
   });
-  ctx.beginPath();ctx.arc(cx,cy,r-7,0,Math.PI*2);ctx.strokeStyle="#1785ff";ctx.lineWidth=3;ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx,cy,r-7,0,Math.PI*2);
+  ctx.strokeStyle="#1785ff";
+  ctx.lineWidth=3;
+  ctx.stroke();
 }
 
 function setupWheel(){
-  if(!wheelGames.length)return;
-  spinCount=0;spinning=false;wheelRotation=0;
-  const w=$("wheel");w.style.transition="none";w.style.transform="rotate(0deg)";
+  if(wheelGames.length<2)return;
+  spinCount=0;
+  spinning=false;
+  wheelRotation=0;
+  selectedIndex1=-1;
+  selectedIndex2=-1;
+
+  const w=$("wheel");
+  w.style.transition="none";
+  w.style.transform="rotate(0deg)";
+
   drawWheel();
-  $("spinBtn1").disabled=false;$("spinBtn1").textContent="SPIN GAME 1";
-  $("spinBtn2").disabled=true;$("spinBtn2").textContent="SPIN GAME 2";$("spinBtn2").classList.remove("ready");
-  $("spinStatus").textContent="Ready — spin Game 1";
-  $("selectedGame").classList.add("hidden");$("selectedGame").innerHTML="";
+
+  $("spinBtn1").disabled=!gameUnlocked;
+  $("spinBtn2").disabled=true;
+  $("spinBtn1").textContent="SPIN GAME 1";
+  $("spinBtn2").textContent="SPIN GAME 2";
+  $("spinBtn2").classList.remove("ready");
+  $("spinStatus").textContent=gameUnlocked?"Ready — spin Game 1":"Enter the Game PIN to unlock";
+  $("selectedGame").classList.add("hidden");
+  $("selectedGame").innerHTML="";
 }
 
 function spinWheel(which){
-  if(!gameUnlocked)return;
-  if(spinning||spinCount>=2||!wheelGames.length||currentGames.length<2)return;
-  if(which===1&&spinCount!==0)return;if(which===2&&spinCount!==1)return;
-  const targetGame=currentGames[which-1];if(!targetGame)return;
-  spinning=true;$("spinBtn1").disabled=true;$("spinBtn2").disabled=true;
+  if(!gameUnlocked||spinning||spinCount>=2||wheelGames.length<2||currentGames.length<2)return;
+  if(which===1&&spinCount!==0)return;
+  if(which===2&&spinCount!==1)return;
+
+  const targetGame=currentGames[which-1];
+  if(!targetGame)return;
+
+  spinning=true;
+  $("spinBtn1").disabled=true;
+  $("spinBtn2").disabled=true;
   $("spinStatus").textContent=which===1?"Spinning Game 1…":"Spinning Game 2…";
 
-  let index=wheelGames.findIndex(g=>g.home===targetGame.home&&g.away===targetGame.away&&Math.abs(new Date(g.kick)-new Date(targetGame.kick))<120000);
-  if(index<0)index=Math.min(which-1,wheelGames.length-1);
+  let index=wheelGames.findIndex(g=>
+    g.home===targetGame.home &&
+    g.away===targetGame.away &&
+    Math.abs(new Date(g.kick)-new Date(targetGame.kick))<120000
+  );
 
-  const segment=360/wheelGames.length,targetAngle=-(index*segment+segment/2);
+  if(index<0){
+    index=which===1?0:Math.min(1,wheelGames.length-1);
+  }
+
+  if(which===2 && index===selectedIndex1){
+    index=(index+1)%wheelGames.length;
+  }
+
+  const segment=360/wheelGames.length;
+  const targetAngle=-(index*segment+segment/2);
   const currentMod=((wheelRotation%360)+360)%360;
   const turns=6+Math.floor(Math.random()*3);
   const finalRotation=wheelRotation+turns*360+targetAngle-currentMod;
+
   const w=$("wheel");
-  w.style.transition="transform 5.2s cubic-bezier(.08,.78,.16,1)";
-  w.style.transform=`rotate(${finalRotation}deg)`;wheelRotation=finalRotation;
+  w.style.transition="transform 5.4s cubic-bezier(.08,.78,.16,1)";
+  w.style.transform=`rotate(${finalRotation}deg)`;
+  wheelRotation=finalRotation;
 
   setTimeout(()=>{
+    if(which===1)selectedIndex1=index;
+    else selectedIndex2=index;
+
     spinCount++;
-    $("selectedGame").innerHTML+=`<div style="margin:8px 0"><strong>Game ${which}: ${esc(targetGame.home)} v ${esc(targetGame.away)}</strong><small>${dateLabel(targetGame.kick)}</small></div>`;
+    spinning=false;
+
+    const picked=wheelGames[index];
+    $("selectedGame").innerHTML+=`<div style="margin:8px 0"><strong>Game ${which}: ${esc(picked.home)} v ${esc(picked.away)}</strong><small>${dateLabel(picked.kick)}</small></div>`;
     $("selectedGame").classList.remove("hidden");
-    drawWheel();spinning=false;
+
+    /* Repaint only the canvas highlight; do NOT reset wheel rotation. */
+    drawWheel();
+
     if(spinCount===1){
-      $("spinBtn2").disabled=false;$("spinBtn2").classList.add("ready");
+      $("spinBtn2").disabled=false;
+      $("spinBtn2").classList.add("ready");
       $("spinStatus").textContent="Game 1 selected — now spin Game 2";
     }else{
+      $("spinBtn1").disabled=true;
+      $("spinBtn2").disabled=true;
+      $("spinBtn2").classList.remove("ready");
       $("spinBtn2").textContent="BOTH GAMES SELECTED ✓";
       $("spinStatus").textContent="Both SUPER 2s games revealed";
     }
-  },5400);
+  },5500);
 }
 
 async function loadAllWeekendGames(weekStart){
-  const base=new Date(weekStart+"T00:00:00"),out=[];
+  const base=new Date(weekStart+"T00:00:00");
+  const out=[];
+
   for(let i=0;i<4;i++){
-    const d=new Date(base);d.setDate(base.getDate()+i);
+    const d=new Date(base);
+    d.setDate(base.getDate()+i);
     const ds=d.toISOString().slice(0,10).replaceAll("-","");
+
     try{
       const res=await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates=${ds}`,{cache:"no-store"});
-      if(!res.ok)continue;const data=await res.json();
-      for(const e of data.events||[]){
-        const c=(e.competitions||[])[0]||{},teams=c.competitors||[];if(teams.length!==2)continue;
-        const home=teams.find(x=>x.homeAway==="home")||teams[0],away=teams.find(x=>x.homeAway==="away")||teams[1],kick=e.date||c.date;
-        if(!kick)continue;const day=new Date(kick).getDay();if(![0,1,5,6].includes(day))continue;
-        out.push({id:e.id,home:home.team?.displayName||"",away:away.team?.displayName||"",kick:new Date(kick).toISOString(),homeLogo:home.team?.logo||"",awayLogo:away.team?.logo||""});
+      if(!res.ok)continue;
+
+      const data=await res.json();
+
+      for(const e of (data.events||[])){
+        const c=(e.competitions||[])[0]||{};
+        const teams=c.competitors||[];
+        if(teams.length!==2)continue;
+
+        const home=teams.find(x=>x.homeAway==="home")||teams[0];
+        const away=teams.find(x=>x.homeAway==="away")||teams[1];
+        const kick=e.date||c.date;
+        if(!kick)continue;
+
+        const dt=new Date(kick);
+        if(![0,1,5,6].includes(dt.getDay()))continue;
+
+        out.push({
+          id:e.id,
+          home:home.team?.displayName||"",
+          away:away.team?.displayName||"",
+          kick:dt.toISOString(),
+          homeLogo:home.team?.logo||"",
+          awayLogo:away.team?.logo||""
+        });
       }
-    }catch(e){console.warn("Fixture fetch failed",e)}
+    }catch(err){
+      console.warn("Fixture fetch failed",err);
+    }
   }
-  const seen=new Set();return out.filter(g=>g.home&&g.away&&g.id&&!seen.has(g.id)&&seen.add(g.id)).sort((a,b)=>new Date(a.kick)-new Date(b.kick));
+
+  const seen=new Set();
+  return out.filter(g=>g.home&&g.away&&!seen.has(g.id)&&seen.add(g.id))
+    .sort((a,b)=>new Date(a.kick)-new Date(b.kick));
 }
 
 async function loadWeek(){
-  try{
-    const r=await sb.from("weeks").select("*").order("week_start",{ascending:false}).limit(1).maybeSingle();
-    if(r.error){$("games").innerHTML='<div class="msg">Database connection error: '+esc(r.error.message)+"</div>";$("spinStatus").textContent="Unable to load games";return}
-    currentWeek=r.data;
-    if(!currentWeek){$("games").innerHTML='<div class="msg">No games have been selected yet.</div>';return}
-    currentGames=[
-      {home:currentWeek.game1_home,away:currentWeek.game1_away,kick:currentWeek.game1_kickoff,n:1},
-      {home:currentWeek.game2_home,away:currentWeek.game2_away,kick:currentWeek.game2_kickoff,n:2}
-    ];
-    wheelGames=await loadAllWeekendGames(currentWeek.week_start);
-    const selected=currentGames.map(c=>wheelGames.find(g=>g.home===c.home&&g.away===c.away)||({...c,id:"selected-"+c.n,homeLogo:"",awayLogo:""}));
-    const ids=new Set(selected.map(g=>g.id));
-    wheelGames=[...selected,...wheelGames.filter(g=>!ids.has(g.id))].slice(0,10);
-    $("wheelCount").textContent=wheelGames.length+" eligible fixtures";
-    renderGames();setupWheel();await loadWinner();
-  }catch(e){console.error(e);$("spinStatus").textContent="Unable to load wheel"}
+  $("spinStatus").textContent="Loading wheel…";
+
+  const {data,error}=await sb.from("weeks").select("*").order("week_start",{ascending:false}).limit(1).maybeSingle();
+
+  if(error){
+    $("games").innerHTML='<div class="msg">Database connection error: '+esc(error.message)+'</div>';
+    $("spinStatus").textContent="Database connection error";
+    return;
+  }
+
+  currentWeek=data;
+
+  if(!data){
+    $("games").innerHTML='<div class="msg">No games have been selected yet.</div>';
+    $("spinStatus").textContent="No games selected";
+    return;
+  }
+
+  currentGames=[
+    {home:data.game1_home,away:data.game1_away,kick:data.game1_kickoff,n:1},
+    {home:data.game2_home,away:data.game2_away,kick:data.game2_kickoff,n:2}
+  ];
+
+  const all=await loadAllWeekendGames(data.week_start);
+  const selectedKeys=new Set(currentGames.map(g=>g.home+"|"+g.away));
+  const selected=all.filter(g=>selectedKeys.has(g.home+"|"+g.away));
+  const others=all.filter(g=>!selectedKeys.has(g.home+"|"+g.away));
+
+  wheelGames=[...selected,...others].slice(0,10);
+
+  if(wheelGames.length<2||!currentGames.every(g=>wheelGames.some(x=>x.home===g.home&&x.away===g.away))){
+    wheelGames=[...currentGames.map(g=>({...g})),...others].slice(0,10);
+  }
+
+  $("wheelCount").textContent=wheelGames.length+" eligible fixtures";
+  renderGames();
+  setupWheel();
+  await loadWinner();
 }
 
-function renderGames(){$("games").innerHTML=currentGames.map(g=>`<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div></div>`).join("")}
+function renderGames(){
+  $("games").innerHTML=currentGames.map(g=>
+    `<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div></div>`
+  ).join("");
+}
 
-function renderPredictionForm(){$("predGames").innerHTML=currentGames.map(g=>`<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div><label>Score</label><div class="score"><input id="g${g.n}h" inputmode="numeric" type="number" min="0" max="99" placeholder="Home"><input id="g${g.n}a" inputmode="numeric" type="number" min="0" max="99" placeholder="Away"></div></div>`).join("")}
+function renderPredictionForm(){
+  $("predGames").innerHTML=currentGames.map(g=>
+    `<div class="game">
+      <b>${esc(g.home)} v ${esc(g.away)}</b>
+      <div class="kick">${dateLabel(g.kick)}</div>
+      <label>Score</label>
+      <div class="score">
+        <input id="g${g.n}h" inputmode="numeric" type="number" min="0" max="99" placeholder="Home">
+        <input id="g${g.n}a" inputmode="numeric" type="number" min="0" max="99" placeholder="Away">
+      </div>
+    </div>`
+  ).join("");
+}
 
 async function continuePlayer(){
-  if(!gameUnlocked){msg("Enter the organiser PIN first.");return}
-  const name=$("name").value.trim(),pin=$("pin").value.trim();
-  if(name.length<2)return msg("Please enter your name.");if(!/^\d{4}$/.test(pin))return msg("PIN must be exactly 4 digits.");if(!currentWeek)return msg("This week's games are not available yet.");
+  if(!gameUnlocked)return msg("Please enter the Game PIN first.");
+
+  const name=$("name").value.trim();
+  const pin=$("pin").value.trim();
+
+  if(name.length<2)return msg("Please enter your name.");
+  if(!/^\d{4}$/.test(pin))return msg("PIN must be exactly 4 digits.");
+  if(!currentWeek)return msg("This week's games are not available yet.");
+
   $("continueBtn").disabled=true;
+
   let r=await sb.rpc("check_player",{p_name:name,p_pin:pin});
-  if(r.error)r=await sb.rpc("create_player",{p_name:name,p_pin:pin});
-  if(r.error){msg(r.error.message);$("continueBtn").disabled=false;return}
+
+  if(r.error){
+    r=await sb.rpc("create_player",{p_name:name,p_pin:pin});
+    if(r.error){
+      msg(r.error.message);
+      $("continueBtn").disabled=false;
+      return;
+    }
+  }
+
   playerId=r.data;
-  const x=await sb.from("predictions").select("*").eq("week_id",currentWeek.id).eq("player_id",playerId).maybeSingle();
-  if(x.error){msg(x.error.message);$("continueBtn").disabled=false;return}
-  if(x.data){showSubmitted(x.data);await showOthers();return}
-  renderPredictionForm();$("predForm").classList.remove("hidden");$("continueBtn").classList.add("hidden");
+
+  const {data:existing,error}=await sb.from("predictions")
+    .select("*")
+    .eq("week_id",currentWeek.id)
+    .eq("player_id",playerId)
+    .maybeSingle();
+
+  if(error){
+    msg(error.message);
+    $("continueBtn").disabled=false;
+    return;
+  }
+
+  if(existing){
+    showSubmitted(existing);
+    await showOthers();
+    $("continueBtn").disabled=false;
+    return;
+  }
+
+  renderPredictionForm();
+  $("predForm").classList.remove("hidden");
+  $("continueBtn").classList.add("hidden");
 }
 
 async function submit(){
-  const v=["g1h","g1a","g2h","g2a"].map(id=>$(id).value);
-  if(v.some(x=>x===""||Number(x)<0))return msg("Please enter all four scores.");
-  const r=await sb.rpc("submit_prediction",{p_week_id:currentWeek.id,p_player_id:playerId,p_game1_home:Number(v[0]),p_game1_away:Number(v[1]),p_game2_home:Number(v[2]),p_game2_away:Number(v[3])});
-  if(r.error)return msg(r.error.message);
-  const p=await sb.from("predictions").select("*").eq("id",r.data).single();
-  if(p.error)return msg(p.error.message);
-  showSubmitted(p.data);await showOthers();$("predForm").classList.add("hidden");
+  if(!gameUnlocked)return msg("Please enter the Game PIN first.");
+
+  const vals=["g1h","g1a","g2h","g2a"].map(id=>$(id).value);
+  if(vals.some(v=>v===""||Number(v)<0))return msg("Please enter all four scores.");
+
+  const r=await sb.rpc("submit_prediction",{
+    p_week_id:currentWeek.id,
+    p_player_id:playerId,
+    p_game1_home:Number(vals[0]),
+    p_game1_away:Number(vals[1]),
+    p_game2_home:Number(vals[2]),
+    p_game2_away:Number(vals[3])
+  });
+
+  if(r.error){msg(r.error.message);return}
+
+  const {data:p}=await sb.from("predictions").select("*").eq("id",r.data).single();
+  showSubmitted(p);
+  await showOthers();
+  $("predForm").classList.add("hidden");
 }
 
 function showSubmitted(p){
   $("submittedCard").classList.remove("hidden");
-  $("myPrediction").innerHTML=`<div class="game"><b>${esc(currentGames[0].home)} ${p.game1_home_score}–${p.game1_away_score} ${esc(currentGames[0].away)}</b></div><div class="game"><b>${esc(currentGames[1].home)} ${p.game2_home_score}–${p.game2_away_score} ${esc(currentGames[1].away)}</b></div>`;
+  $("myPrediction").innerHTML=
+    `<div class="game"><b>${esc(currentGames[0].home)} ${p.game1_home_score}–${p.game1_away_score} ${esc(currentGames[0].away)}</b></div>
+     <div class="game"><b>${esc(currentGames[1].home)} ${p.game2_home_score}–${p.game2_away_score} ${esc(currentGames[1].away)}</b></div>`;
 }
 
 async function showOthers(){
   const r=await sb.rpc("get_submitted_predictions",{p_week_id:currentWeek.id,p_player_id:playerId});
-  if(r.error)return msg(r.error.message);
+  if(r.error){msg(r.error.message);return}
+
   $("othersCard").classList.remove("hidden");
-  $("others").innerHTML=(r.data||[]).map(x=>`<div class="listrow"><b>${esc(x.player_name)}</b><br>${x.game1_home_score}–${x.game1_away_score} &nbsp; | &nbsp; ${x.game2_home_score}–${x.game2_away_score}</div>`).join("");
+  $("others").innerHTML=(r.data||[]).map(x=>
+    `<div class="listrow"><b>${esc(x.player_name)}</b><br>${x.game1_home_score}–${x.game1_away_score} &nbsp; | &nbsp; ${x.game2_home_score}–${x.game2_away_score}</div>`
+  ).join("");
 }
 
 async function loadWinner(){
   if(!currentWeek)return;
+
   const r=await sb.rpc("get_winners",{p_week_id:currentWeek.id});
   if(r.error||!r.data||!r.data.length)return;
+
   $("winnerCard").style.display="block";
-  $("winnerText").innerHTML=r.data.map(w=>`<div class="pred">${esc(w.player_name)}</div><div>${esc(currentGames[0].home)} ${esc(w.game1_prediction)} ${esc(currentGames[0].away)}</div><div>${esc(currentGames[1].home)} ${esc(w.game2_prediction)} ${esc(currentGames[1].away)}</div>`).join("<hr>");
-  for(let i=0;i<28;i++){const e=document.createElement("i");e.style.left=(i*3.7)+"%";e.style.animationDelay=((i%7)*.18)+"s";$("confetti").appendChild(e)}
+  $("winnerText").innerHTML=r.data.map(w=>
+    `<div class="pred">${esc(w.player_name)}</div>
+     <div>${esc(currentGames[0].home)} ${esc(w.game1_prediction)} ${esc(currentGames[0].away)}</div>
+     <div>${esc(currentGames[1].home)} ${esc(w.game2_prediction)} ${esc(currentGames[1].away)}</div>`
+  ).join("<hr>");
+
+  for(let i=0;i<28;i++){
+    const e=document.createElement("i");
+    e.style.left=(i*3.7)+"%";
+    e.style.animationDelay=((i%7)*.18)+"s";
+    $("confetti").appendChild(e);
+  }
 }
+
+/* PIN: must be correct before wheel spins or predictions are available. */
+$("unlockBtn").addEventListener("click",()=>{
+  const pin=$("gamePin").value.trim();
+
+  if(pin!==GAME_ACCESS_PIN){
+    gameUnlocked=false;
+    $("accessCard").classList.remove("accessOk");
+    $("accessMessage").innerHTML='<div class="msg">❌ Incorrect PIN. Please enter the PIN supplied by the organiser.</div>';
+    $("spinBtn1").disabled=true;
+    $("spinBtn2").disabled=true;
+    $("loginCard").classList.add("hidden");
+    return;
+  }
+
+  gameUnlocked=true;
+  $("accessCard").classList.add("accessOk");
+  $("accessMessage").innerHTML='<div class="msg">✅ Game unlocked. You can now spin the wheel and enter your prediction.</div>';
+  $("gamePin").disabled=true;
+  $("unlockBtn").disabled=true;
+  $("loginCard").classList.remove("hidden");
+
+  if(wheelGames.length>=2){
+    $("spinBtn1").disabled=spinCount!==0;
+    $("spinStatus").textContent=spinCount===0?"Ready — spin Game 1":"Game already started";
+  }
+});
+
+$("gamePin").addEventListener("input",e=>{
+  e.target.value=e.target.value.replace(/\D/g,"").slice(0,4);
+});
+
+$("pin").addEventListener("input",e=>{
+  e.target.value=e.target.value.replace(/\D/g,"").slice(0,4);
+});
 
 $("spinBtn1").addEventListener("click",()=>spinWheel(1));
 $("spinBtn2").addEventListener("click",()=>spinWheel(2));
 $("continueBtn").addEventListener("click",continuePlayer);
 $("submitBtn").addEventListener("click",submit);
-$("pin").addEventListener("input",e=>e.target.value=e.target.value.replace(/\D/g,"").slice(0,4));
-window.addEventListener("resize",()=>{if(wheelGames.length)drawWheel()});
+$("newWeekBtn").addEventListener("click",()=>location.reload());
+
+window.addEventListener("resize",()=>{
+  if(wheelGames.length)drawWheel();
+});
+
 loadWeek();
 </script>
 </body>
