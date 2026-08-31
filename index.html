@@ -56,21 +56,18 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
 <div class="wrap">
   <div class="brand"><h1>SUPER 2s</h1><p>Predict both exact scores</p></div>
 
-  <div class="card wheelCard">
-    <div class="wheelTitle">🎡 SUPER 2s WHEEL</div>
-    <div class="wheelSub">All Friday–Monday Premier League fixtures · <span id="wheelCount">Loading fixtures…</span></div>
-    <div class="wheelStage">
-      <div class="pointer"></div>
-      <div id="wheel" class="wheel">
-        <canvas id="wheelCanvas" class="wheelCanvas"></canvas>
-      </div>
-      <div class="wheelHub">SUPER<br>2s</div>
-    </div>
-    <button class="btn spinBtn" id="spinBtn" disabled>SPIN 1</button>
-    <div id="spinStatus" class="spinStatus"></div>
-    <div id="selectedGame" class="selectedGame hidden"></div>
-    <div class="wheelHint">All eligible Friday–Monday fixtures are shown. The central draw fixes the two winning games for everyone.</div>
+    <div id="spinStatus" class="spinStatus">
+    Loading wheel…
   </div>
+
+  <div id="selectedGame" class="selectedGame hidden"></div>
+
+  <div class="wheelHint">
+    All 10 eligible Friday–Monday fixtures are shown.
+    Spin once for Game 1, then again for Game 2.
+    Game 1 is highlighted after the first spin.
+  </div>
+</div>
 
   <div class="card">
     <h2>🎡 This week's games</h2>
