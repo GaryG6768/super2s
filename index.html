@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SUPER 2s — Original Blue Wheel</title>
+<title>SUPER 2s — Professional Wheel</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
@@ -26,48 +26,49 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
 @keyframes fall{to{transform:translateY(520px) rotate(540deg)}}
 .small{font-size:13px;color:#6b7280}.hidden{display:none}.listrow{padding:10px 0;border-bottom:1px solid #eee}.listrow:last-child{border-bottom:0}
 
-/* Original-style professional football wheel */
-.wheelCard{background:radial-gradient(circle at 50% 20%,#16253d 0,#0a1220 48%,#02050b 100%);color:#fff;text-align:center;padding:18px;border-radius:24px;border:1px solid #183b67;box-shadow:0 12px 35px #0009}
-.wheelTitle{font-size:23px;font-weight:900;letter-spacing:.5px;color:#fff;margin-bottom:3px;white-space:nowrap}
-.wheelSub{font-size:12px;color:#b9c7d9;margin-bottom:14px;line-height:1.35}
-.wheelStage{position:relative;width:min(350px,82vw);height:min(350px,82vw);margin:0 auto 16px}
-.wheel{width:100%;height:100%;border-radius:50%;border:7px solid #d9e2ee;box-shadow:0 0 0 2px #1d7cf2,0 14px 35px #000, inset 0 0 28px #000;position:relative;overflow:hidden;background:#07111f;transition:transform 5.2s cubic-bezier(.08,.78,.16,1)}
+/* Professional original-style wheel */
+.wheelCard{background:radial-gradient(circle at 50% 20%,#16253d 0,#0a1220 48%,#02050b 100%);color:#fff;text-align:center;padding:16px 10px;border-radius:24px;border:1px solid #183b67;box-shadow:0 12px 35px #0009}
+.wheelTitle{font-size:23px;font-weight:900;letter-spacing:.5px;color:#fff;margin-bottom:3px}
+.wheelSub{font-size:12px;color:#b9c7d9;margin-bottom:12px;line-height:1.35}
+.wheelStage{position:relative;width:min(390px,92vw);height:min(390px,92vw);margin:0 auto 16px}
+.wheel{width:100%;height:100%;border-radius:50%;border:7px solid #d9e2ee;box-shadow:0 0 0 2px #1d7cf2,0 14px 35px #000,inset 0 0 28px #000;position:relative;overflow:hidden;background:#07111f;transition:transform 5.3s cubic-bezier(.10,.78,.12,1)}
 .wheelCanvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%}
-.wheelHub{position:absolute;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);width:84px;height:84px;border-radius:50%;background:radial-gradient(circle,#17263a,#050a12);border:4px solid #1785ff;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;line-height:1.05;box-shadow:0 0 20px #1785ff66,0 4px 14px #000}
+.wheelHub{position:absolute;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);width:82px;height:82px;border-radius:50%;background:radial-gradient(circle,#17263a,#050a12);border:4px solid #1785ff;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;line-height:1.05;box-shadow:0 0 20px #1785ff66,0 4px 14px #000}
 .pointer{position:absolute;z-index:7;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:17px solid transparent;border-right:17px solid transparent;border-top:40px solid #ef3d35;filter:drop-shadow(0 3px 3px #000)}
-.spinBtn{background:linear-gradient(#1688ff,#0756c7);color:#fff;font-size:19px;border-radius:14px;box-shadow:0 4px 0 #06377f;font-weight:900}
+.spinBtn{background:linear-gradient(#1688ff,#0756c7);color:#fff;font-size:20px;border-radius:14px;box-shadow:0 4px 0 #06377f;font-weight:900}
 .spinBtn:active{transform:translateY(2px);box-shadow:0 2px 0 #06377f}
 .spinStatus{min-height:22px;margin-top:12px;font-weight:800;color:#6fb5ff}
 .selectedGame{margin-top:12px;background:#f7fbff;color:#111;border-radius:14px;padding:12px;text-align:left;border:2px solid #1785ff}
-.selectedGame strong{display:block;font-size:16px}.selectedGame small{color:#6b7280}
+.selectedGame strong{display:block;font-size:16px}.selectedGame small{display:block;color:#6b7280;margin-top:3px}
 .wheelHint{font-size:12px;color:#b9c7d9;margin-top:10px}
 @media(max-width:430px){
-      .wrap{padding:10px}
-      .brand h1{font-size:34px}
-      .wheelCard{padding:14px 8px}
-      .wheelTitle{font-size:20px}
-      .wheelStage{width:310px;height:310px;max-width:82vw;max-height:82vw}
-      .wheelHub{width:70px;height:70px;font-size:11px}
-      .pointer{border-left-width:14px;border-right-width:14px;border-top-width:34px}
-    }
+  .wrap{padding:10px}.brand h1{font-size:34px}
+  .wheelCard{padding:14px 6px}
+  .wheelStage{width:360px;height:360px;max-width:90vw;max-height:90vw}
+  .wheelHub{width:70px;height:70px;font-size:11px}
+  .pointer{border-left-width:14px;border-right-width:14px;border-top-width:34px}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="brand"><h1>SUPER 2s</h1><p>Predict both exact scores</p></div>
 
-    <div id="spinStatus" class="spinStatus">
-    Loading wheel…
+  <div class="card wheelCard">
+    <div class="wheelTitle">🎡 SUPER 2s WHEEL</div>
+    <div class="wheelSub">10 Friday–Monday Premier League fixtures · <span id="wheelCount">Loading fixtures…</span></div>
+    <div class="wheelStage">
+      <div class="pointer"></div>
+      <div id="wheel" class="wheel">
+        <canvas id="wheelCanvas" class="wheelCanvas"></canvas>
+      </div>
+      <div class="wheelHub">SUPER<br>2s</div>
+    </div>
+    <button class="btn spinBtn" id="spinBtn" type="button" disabled>SPIN 1</button>
+    <div id="spinStatus" class="spinStatus">Loading wheel…</div>
+    <div id="selectedGame" class="selectedGame hidden"></div>
+    <div class="wheelHint">10 eligible Friday–Monday fixtures are shown. Game 1 becomes solid yellow after Spin 1, then Spin 2 selects Game 2.</div>
   </div>
-
-  <div id="selectedGame" class="selectedGame hidden"></div>
-
-  <div class="wheelHint">
-    All 10 eligible Friday–Monday fixtures are shown.
-    Spin once for Game 1, then again for Game 2.
-    Game 1 is highlighted after the first spin.
-  </div>
-</div>
 
   <div class="card">
     <h2>🎡 This week's games</h2>
@@ -82,7 +83,6 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
     <label>Your 4-digit PIN</label>
     <input id="pin" inputmode="numeric" maxlength="4" placeholder="4 digits">
     <div id="existingHelp" class="small" style="margin-top:6px">First time? Your name and PIN will create your player account.</div>
-
     <div id="predForm" class="hidden">
       <div id="predGames"></div>
       <button class="btn" id="submitBtn">🔒 SUBMIT & LOCK PREDICTIONS</button>
@@ -116,84 +116,44 @@ const SUPABASE_KEY = "sb_publishable_4MAxToZrtx1OUoLj5s6d1g_TC8rHqrM";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentWeek=null, playerId=null, currentGames=[], wheelGames=[];
-let spinCount=0, spinning=false;
+let spinCount=0, spinning=false, rotation=0;
 
 const $=id=>document.getElementById(id);
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function msg(t){$("message").innerHTML='<div class="msg">'+esc(t)+'</div>'}
 function dateLabel(d){return new Intl.DateTimeFormat('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(d))}
 
-function initials(name){
-  return String(name||"").split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase();
-}
 function drawWheel(){
-
   const list=wheelGames;
   if(!list.length)return;
-  const stage=$("wheel"), canvas=$("wheelCanvas");
-  const n=list.length;
-  const maxSize=Math.min(420,Math.floor(window.innerWidth*.94));
-  const minSize=300;
-  // Automatically scale the wheel down slightly when there are many fixtures,
-  // while keeping it large enough to read on a phone.
-  const scale=n>=10?.98:1;
-  const size=Math.max(minSize,Math.floor(maxSize*scale));
-  stage.style.width=size+"px"; stage.style.height=size+"px";
-  canvas.width=size*2; canvas.height=size*2;
-  canvas.style.width="100%"; canvas.style.height="100%";
-  const ctx=canvas.getContext("2d"), r=size, cx=r, cy=r;
+  const canvas=$("wheelCanvas"), stage=$("wheel");
+  const n=list.length, size=Math.min(390,Math.max(300,Math.floor(window.innerWidth*.92)));
+  stage.style.width=size+"px";stage.style.height=size+"px";
+  canvas.width=size*2;canvas.height=size*2;
+  const ctx=canvas.getContext("2d"),r=size,cx=r,cy=r;
   ctx.clearRect(0,0,size*2,size*2);
 
-  const logos={};
-  list.forEach(g=>{
-    if(g.homeLogo){logos[g.home]=new Image();logos[g.home].src=g.homeLogo;}
-    if(g.awayLogo){logos[g.away]=new Image();logos[g.away].src=g.awayLogo;}
-  });
+  for(let i=0;i<n;i++){
+    const g=list[i],a0=-Math.PI/2+i*2*Math.PI/n+.008,a1=-Math.PI/2+(i+1)*2*Math.PI/n-.008,mid=(a0+a1)/2;
+    const key=g.home+"|"+g.away;
+    const g1=currentGames[0] && key===currentGames[0].home+"|"+currentGames[0].away;
+    const g2=currentGames[1] && key===currentGames[1].home+"|"+currentGames[1].away;
+    const selected=(spinCount>=1&&g1)||(spinCount>=2&&g2);
 
-  function drawSegment(i){
-    const g=list[i], a0=-Math.PI/2+i*2*Math.PI/n+.006, a1=-Math.PI/2+(i+1)*2*Math.PI/n-.006;
-    const mid=(a0+a1)/2;
-    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r-4,a0,a1);ctx.closePath();
-    const isGame1=spinCount>=1 && currentGames[0] && g.home===currentGames[0].home && g.away===currentGames[0].away;
-    const isGame2=spinCount>=2 && currentGames[1] && g.home===currentGames[1].home && g.away===currentGames[1].away;
-    ctx.fillStyle=(isGame1||isGame2)?"#ffd400":(i%2===0?"#081426":"#10243d");ctx.fill();
-    ctx.strokeStyle=(isGame1||isGame2)?"#fff":"#8ca2bb";ctx.lineWidth=(isGame1||isGame2)?4:Math.max(1.2,2.2-(n/20));ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r-5,a0,a1);ctx.closePath();
+    ctx.fillStyle=selected?"#ffd400":(i%2?"#12304e":"#0a1b2e");ctx.fill();
+    ctx.strokeStyle=selected?"#fff":"#577897";ctx.lineWidth=selected?4:2;ctx.stroke();
 
-    const fs=Math.max(7.5,Math.min(14,185/n));
+    const fs=Math.max(8,Math.min(14,150/n));
     ctx.save();ctx.translate(cx+Math.cos(mid)*r*.69,cy+Math.sin(mid)*r*.69);
-    ctx.rotate(mid+Math.PI/2);
-    ctx.textAlign="center";ctx.fillStyle=(isGame1||isGame2)?"#07111f":"#fff";ctx.font=`900 ${fs}px Arial`;
-    let label=(g.home+" v "+g.away);
-    if(label.length>28)label=label.slice(0,27)+"…";
+    ctx.rotate(mid+Math.PI/2);ctx.textAlign="center";
+    ctx.fillStyle=selected?"#07111f":"#fff";ctx.font=`900 ${fs}px Arial`;
+    let label=g.home+" v "+g.away;if(label.length>25)label=label.slice(0,24)+"…";
     ctx.fillText(label,0,0);
-    ctx.fillStyle=(isGame1||isGame2)?"#07111f":"#39a1ff";ctx.font=`900 ${Math.max(7,fs-1)}px Arial`;
-    ctx.fillText(dateLabel(g.kick).replace(/^[A-Za-z]{3},?\s*/,""),0,fs+8);
+    ctx.fillStyle=selected?"#07111f":"#39a1ff";ctx.font=`900 ${Math.max(8,fs-1)}px Arial`;
+    ctx.fillText(new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(g.kick)),0,fs+10);
     ctx.restore();
-
-    // Real team badges from ESPN's fixture feed.
-    const badgeR=Math.max(8,Math.min(15,125/n));
-    [[g.homeLogo,-.055],[g.awayLogo,.055]].forEach(([url,off])=>{
-      if(!url)return;
-      const img=logos[url? (off<0?g.home:g.away):g.home];
-      if(img && img.complete && img.naturalWidth){
-        const ang=mid+off;
-        const x=cx+Math.cos(ang)*r*.53, y=cy+Math.sin(ang)*r*.53;
-        ctx.save();ctx.beginPath();ctx.arc(x,y,badgeR+2,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();ctx.clip();
-        ctx.drawImage(img,x-badgeR,y-badgeR,badgeR*2,badgeR*2);ctx.restore();
-      }
-    });
   }
-
-  for(let i=0;i<n;i++)drawSegment(i);
-  ctx.beginPath();ctx.arc(cx,cy,r-7,0,Math.PI*2);ctx.strokeStyle="#1785ff";ctx.lineWidth=2;ctx.stroke();
-
-  // Repaint when badges finish loading.
-  list.forEach(g=>{
-    [g.homeLogo,g.awayLogo].filter(Boolean).forEach(url=>{
-      const img=logos[url? (url===g.homeLogo?g.home:g.away):g.home];
-      if(img)img.onload=()=>drawWheel();
-    });
-  });
 }
 
 function setupWheel(){
@@ -201,112 +161,66 @@ function setupWheel(){
   drawWheel();
   $("spinBtn").disabled=false;
   $("spinBtn").textContent="SPIN 1";
-  $("spinStatus").textContent="Spin to reveal Game 1";
+  $("spinStatus").textContent="Spin 1 to reveal Game 1";
   $("selectedGame").classList.add("hidden");
-  spinCount=0;
+  $("selectedGame").innerHTML="";
+  spinCount=0;spinning=false;rotation=0;
+  $("wheel").style.transform="rotate(0deg)";
 }
+
 function spinWheel(){
-  if(spinning || spinCount>=2 || wheelGames.length<2)return;
+  if(spinning||spinCount>=2||wheelGames.length<2||currentGames.length<2)return;
+  spinning=true;$("spinBtn").disabled=true;$("spinStatus").textContent="Spinning…";
 
-  spinning=true;
-  $("spinBtn").disabled=true;
-  $("spinStatus").textContent="Spinning…";
+  // The database has already selected the two central games. The wheel animation
+  // lands on those games so every player gets exactly the same two games.
+  let targetGame=currentGames[spinCount];
+  if(!targetGame)return;
 
-  // Game 1 is the first centrally selected game.
-  // Game 2 is the second centrally selected game.
-  const targetGame=currentGames[spinCount];
-
-  if(!targetGame){
-    spinning=false;
-    $("spinBtn").disabled=false;
-    return;
+  // Game 2 must never equal Game 1.
+  if(spinCount===1 &&
+     targetGame.home===currentGames[0].home &&
+     targetGame.away===currentGames[0].away){
+    targetGame=wheelGames.find(g=>g.home!==currentGames[0].home||g.away!==currentGames[0].away);
+    if(!targetGame){spinning=false;$("spinBtn").disabled=false;return;}
   }
 
-  // Find the target fixture on the 10-fixture wheel.
-  let index=wheelGames.findIndex(g =>
-    g.home===targetGame.home &&
-    g.away===targetGame.away
-  );
+  let index=wheelGames.findIndex(g=>g.home===targetGame.home&&g.away===targetGame.away);
+  if(index<0)index=spinCount;
 
-  if(index<0){
-    index=0;
-  }
-
-  const n=wheelGames.length;
-  const segment=360/n;
-
-  // Put the selected fixture under the red pointer.
-  const target=-(index*segment + segment/2);
-
-  const currentRotation=
-    parseFloat($("wheel").dataset.rotation || "0");
-
-  const currentMod=
-    ((currentRotation % 360)+360)%360;
-
-  const adjustment=
-    ((target-currentMod)+360)%360;
-
+  const n=wheelGames.length,segment=360/n;
+  const target=-(index*segment+segment/2);
+  const currentMod=((rotation%360)+360)%360;
+  const desired=((target-currentMod)+360)%360;
   const turns=6+Math.floor(Math.random()*3);
+  rotation += turns*360+desired;
 
-  const finalRotation=
-    currentRotation+(turns*360)+adjustment;
+  $("wheel").style.transition="transform 5.3s cubic-bezier(.10,.78,.12,1)";
+  $("wheel").style.transform=`rotate(${rotation}deg)`;
 
-  $("wheel").style.transition=
-    "transform 5.3s cubic-bezier(.08,.78,.16,1)";
-
-  $("wheel").style.transform=
-    "rotate("+finalRotation+"deg)";
-
-  $("wheel").dataset.rotation=
-    String(finalRotation);
-
-  setTimeout(function(){
-
+  setTimeout(()=>{
+    const selected=targetGame;
     spinCount++;
-    spinning=false;
-
-    // Redraw the wheel so Game 1 becomes solid yellow.
     drawWheel();
 
-    $("selectedGame").classList.remove("hidden");
-
     if(spinCount===1){
-
-      $("selectedGame").innerHTML=
-        '<div style="background:#ffd400;color:#07111f;padding:12px;border-radius:10px;font-weight:900">'+
-        'GAME 1: '+esc(targetGame.home)+' v '+esc(targetGame.away)+
-        '<small style="display:block;margin-top:4px">'+
-        dateLabel(targetGame.kick)+
-        '</small></div>';
-
+      $("selectedGame").innerHTML=`<div style="background:#fff7a8;border-left:6px solid #ffd400;padding:10px;border-radius:8px"><strong>Game 1: ${esc(selected.home)} v ${esc(selected.away)}</strong><small>${dateLabel(selected.kick)}</small></div>`;
+      $("selectedGame").classList.remove("hidden");
       $("spinBtn").disabled=false;
       $("spinBtn").textContent="SPIN 2";
-      $("spinStatus").textContent=
-        "Game 1 selected — spin again for Game 2";
-
+      $("spinStatus").textContent="Game 1 selected — spin again for Game 2";
     }else{
-
-      $("selectedGame").innerHTML+=
-        '<div style="margin-top:8px;background:#ffd400;color:#07111f;padding:12px;border-radius:10px;font-weight:900">'+
-        'GAME 2: '+esc(targetGame.home)+' v '+esc(targetGame.away)+
-        '<small style="display:block;margin-top:4px">'+
-        dateLabel(targetGame.kick)+
-        '</small></div>';
-
+      $("selectedGame").innerHTML+=`<div style="margin-top:8px;background:#fff7a8;border-left:6px solid #ffd400;padding:10px;border-radius:8px"><strong>Game 2: ${esc(selected.home)} v ${esc(selected.away)}</strong><small>${dateLabel(selected.kick)}</small></div>`;
       $("spinBtn").disabled=true;
       $("spinBtn").textContent="BOTH GAMES SELECTED ✓";
-      $("spinStatus").textContent=
-        "Both SUPER 2s games selected";
+      $("spinStatus").textContent="Both games selected";
     }
-
-  },5500);
+    spinning=false;
+  },5450);
 }
-window.addEventListener("resize",()=>{if(wheelGames.length)drawWheel();});
 
 async function loadAllWeekendGames(weekStart){
-  const base=new Date(weekStart+"T00:00:00");
-  const out=[];
+  const base=new Date(weekStart+"T00:00:00"),out=[];
   for(let i=0;i<4;i++){
     const d=new Date(base);d.setDate(base.getDate()+i);
     const ds=d.toISOString().slice(0,10).replaceAll("-","");
@@ -315,23 +229,16 @@ async function loadAllWeekendGames(weekStart){
       if(!res.ok)continue;
       const data=await res.json();
       for(const e of (data.events||[])){
-        const c=(e.competitions||[])[0]||{};
-        const teams=c.competitors||[];
+        const c=(e.competitions||[])[0]||{},teams=c.competitors||[];
         if(teams.length!==2)continue;
-        const home=teams.find(x=>x.homeAway==="home")||teams[0];
-        const away=teams.find(x=>x.homeAway==="away")||teams[1];
-        const kick=e.date||c.date;
-        if(!kick)continue;
-        const dt=new Date(kick);
-        if(dt.getDay()===5||dt.getDay()===6||dt.getDay()===0||dt.getDay()===1){
-          out.push({
-            id:e.id,home:home.team?.displayName,away:away.team?.displayName,
-            kick:dt.toISOString(),
-            homeLogo:home.team?.logo||"",awayLogo:away.team?.logo||""
-          });
-        }
+        const home=teams.find(x=>x.homeAway==="home")||teams[0],away=teams.find(x=>x.homeAway==="away")||teams[1];
+        const kick=e.date||c.date;if(!kick)continue;
+        const dt=new Date(kick),day=dt.getDay();
+        if(day!==5&&day!==6&&day!==0&&day!==1)continue;
+        out.push({id:e.id,home:home.team?.displayName||"",away:away.team?.displayName||"",kick:dt.toISOString(),
+          homeLogo:home.team?.logo||"",awayLogo:away.team?.logo||""});
       }
-    }catch(err){ console.warn("Fixture fetch failed",err); }
+    }catch(err){console.warn("Fixture fetch failed",err)}
   }
   const seen=new Set();
   return out.filter(g=>g.home&&g.away&&!seen.has(g.id)&&seen.add(g.id)).sort((a,b)=>new Date(a.kick)-new Date(b.kick));
@@ -342,28 +249,31 @@ async function loadWeek(){
   if(error){$("games").innerHTML='<div class="msg">Database connection error: '+esc(error.message)+'</div>';return}
   currentWeek=data;
   if(!data){$("games").innerHTML='<div class="msg">No games have been selected yet.</div>';return}
+
   currentGames=[
     {home:data.game1_home,away:data.game1_away,kick:data.game1_kickoff,n:1},
     {home:data.game2_home,away:data.game2_away,kick:data.game2_kickoff,n:2}
   ];
 
-  // The database stores the two central selections. The wheel itself displays
-  // every Premier League fixture from Friday through Monday.
-  wheelGames=await loadAllWeekendGames(data.week_start);
-  const selectedKeys=new Set(currentGames.map(g=>g.home+"|"+g.away));
-  if(wheelGames.length<2 || !currentGames.every(g=>wheelGames.some(x=>x.home===g.home&&x.away===g.away))){
-    // Never break the game if the public fixture feed is temporarily unavailable.
-    wheelGames=currentGames.map(g=>({...g}));
+  const all=await loadAllWeekendGames(data.week_start);
+  const keys=new Set(currentGames.map(g=>g.home+"|"+g.away));
+  wheelGames=[...all.filter(g=>keys.has(g.home+"|"+g.away)),...all.filter(g=>!keys.has(g.home+"|"+g.away))].slice(0,10);
+
+  // Guarantee both centrally selected games are present.
+  for(const g of currentGames){
+    if(!wheelGames.some(x=>x.home===g.home&&x.away===g.away)){
+      if(wheelGames.length<10)wheelGames.push({...g});
+      else wheelGames[wheelGames.length-1]={...g};
+    }
   }
-  $("wheelCount").textContent=wheelGames.length+" eligible fixtures";
-  renderGames();
-  setupWheel();
-  await loadWinner();
+
+  $("wheelCount").textContent=wheelGames.length+" fixtures";
+  renderGames();setupWheel();await loadWinner();
 }
+
 function renderGames(){
   $("games").innerHTML=currentGames.map(g=>`<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div></div>`).join('');
 }
-
 function renderPredictionForm(){
   $("predGames").innerHTML=currentGames.map(g=>`<div class="game">
     <b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div>
@@ -373,7 +283,7 @@ function renderPredictionForm(){
     </div></div>`).join('');
 }
 async function continuePlayer(){
-  const name=$("name").value.trim(), pin=$("pin").value.trim();
+  const name=$("name").value.trim(),pin=$("pin").value.trim();
   if(name.length<2)return msg("Please enter your name.");
   if(!/^\d{4}$/.test(pin))return msg("PIN must be exactly 4 digits.");
   if(!currentWeek)return msg("This week's games are not available yet.");
@@ -420,9 +330,12 @@ async function loadWinner(){
   $("winnerText").innerHTML=r.data.map(w=>`<div class="pred">${esc(w.player_name)}</div><div>${esc(currentGames[0].home)} ${esc(w.game1_prediction)} ${esc(currentGames[0].away)}</div><div>${esc(currentGames[1].home)} ${esc(w.game2_prediction)} ${esc(currentGames[1].away)}</div>`).join('<hr>');
   for(let i=0;i<28;i++){let e=document.createElement('i');e.style.left=(i*3.7)+'%';e.style.animationDelay=(i%7)*.18+'s';$("confetti").appendChild(e)}
 }
+
+$("spinBtn").addEventListener("click",spinWheel);
 $("continueBtn").onclick=continuePlayer;
 $("submitBtn").onclick=submit;
 $("pin").addEventListener('input',e=>e.target.value=e.target.value.replace(/\D/g,'').slice(0,4));
+window.addEventListener("resize",drawWheel);
 loadWeek();
 </script>
 </body>
