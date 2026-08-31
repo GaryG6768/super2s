@@ -24,7 +24,7 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
 @keyframes bounce{to{transform:translateY(-8px) scale(1.04)}}
 .confetti{position:absolute;inset:0;pointer-events:none}.confetti i{position:absolute;top:-20px;width:7px;height:14px;background:#1785ff;animation:fall 3s linear infinite}.confetti i:nth-child(2n){background:#6fb5ff}
 @keyframes fall{to{transform:translateY(520px) rotate(540deg)}}
-.small{font-size:13px;color:#6b7280}.hidden{display:none}.listrow{padding:10px 0;border-bottom:1px solid #eee}.listrow:last-child{border-bottom:0}
+.small{font-size:13px;color:#6b7280}.accessCard{background:#eef6ff;border:2px solid #1785ff}.hidden{display:none}.listrow{padding:10px 0;border-bottom:1px solid #eee}.listrow:last-child{border-bottom:0}
 .wheelCard{background:radial-gradient(circle at 50% 20%,#16253d 0,#0a1220 48%,#02050b 100%);color:#fff;text-align:center;padding:18px;border-radius:24px;border:1px solid #183b67;box-shadow:0 12px 35px #0009}
 .wheelTitle{font-size:23px;font-weight:900;letter-spacing:.5px;color:#fff;margin-bottom:3px}
 .wheelSub{font-size:12px;color:#b9c7d9;margin-bottom:14px;line-height:1.35}
@@ -86,6 +86,7 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
       </button>
     </div>
 
+    <button class="btn" id="newWeekBtn" type="button" style="background:#17334f;margin-top:10px">NEW WEEK</button>
     <div id="spinStatus" class="spinStatus">Loading wheel…</div>
 
     <div id="selectedGame" class="selectedGame hidden"></div>
@@ -106,7 +107,16 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
     </div>
   </div>
 
-  <div class="card" id="loginCard">
+  <div class="card" id="accessCard" style="background:#eef6ff;border:2px solid #1785ff">
+  <h2>🔐 Enter the SUPER 2s PIN</h2>
+  <div class="small">You must enter the PIN supplied by the organiser before you can enter a prediction.</div>
+  <label>Game PIN</label>
+  <input id="gamePin" inputmode="numeric" maxlength="4" placeholder="Enter 4-digit game PIN">
+  <button class="btn" id="unlockBtn" type="button">UNLOCK GAME</button>
+  <div id="accessMessage"></div>
+</div>
+
+<div class="card" id="loginCard" style="display:none">
     <h2>📝 Your prediction</h2>
 
     <label>Your unique name</label>
@@ -279,6 +289,7 @@ function renderGames(){$("games").innerHTML=currentGames.map(g=>`<div class="gam
 function renderPredictionForm(){$("predGames").innerHTML=currentGames.map(g=>`<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div><label>Score</label><div class="score"><input id="g${g.n}h" inputmode="numeric" type="number" min="0" max="99" placeholder="Home"><input id="g${g.n}a" inputmode="numeric" type="number" min="0" max="99" placeholder="Away"></div></div>`).join("")}
 
 async function continuePlayer(){
+  if(!gameUnlocked){msg("Enter the organiser PIN first.");return}
   const name=$("name").value.trim(),pin=$("pin").value.trim();
   if(name.length<2)return msg("Please enter your name.");if(!/^\d{4}$/.test(pin))return msg("PIN must be exactly 4 digits.");if(!currentWeek)return msg("This week's games are not available yet.");
   $("continueBtn").disabled=true;
