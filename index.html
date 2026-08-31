@@ -164,6 +164,8 @@ input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-s
 const SUPABASE_URL="https://hwgxfgmmupnxhtviuqks.supabase.co";
 const SUPABASE_KEY="sb_publishable_4MAxToZrtx1OUoLj5s6d1g_TC8rHqrM";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const GAME_ACCESS_PIN="2580"; // Change this 4-digit organiser PIN if required.
+let gameUnlocked=false;
 
 let currentWeek=null,playerId=null,currentGames=[],wheelGames=[],spinCount=0,spinning=false,wheelRotation=0;
 const $=id=>document.getElementById(id);
@@ -186,7 +188,7 @@ function drawWheel(){
     const g1=spinCount>=1&&currentGames[0]&&g.home===currentGames[0].home&&g.away===currentGames[0].away;
     const g2=spinCount>=2&&currentGames[1]&&g.home===currentGames[1].home&&g.away===currentGames[1].away;
     ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r-5,a0,a1);ctx.closePath();
-    ctx.fillStyle=(g1||g2)?"#ffd400":colours[i%colours.length];ctx.fill();
+    ctx.fillStyle=g1?"#ffd400":g2?"#18c96b":colours[i%colours.length];ctx.fill();
     ctx.strokeStyle=(g1||g2)?"#fff":"#8ea4bd";ctx.lineWidth=(g1||g2)?4:2;ctx.stroke();
 
     const fs=Math.max(8,Math.min(15,210/n));
@@ -214,6 +216,7 @@ function setupWheel(){
 }
 
 function spinWheel(which){
+  if(!gameUnlocked)return;
   if(spinning||spinCount>=2||!wheelGames.length||currentGames.length<2)return;
   if(which===1&&spinCount!==0)return;if(which===2&&spinCount!==1)return;
   const targetGame=currentGames[which-1];if(!targetGame)return;
