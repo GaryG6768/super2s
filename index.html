@@ -72,7 +72,7 @@ input{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:10px;font-s
   <button class="btn" id="newWeekBtn" type="button" style="background:#17334f">NEW WEEK</button>
   <div id="spinStatus" class="spinStatus">Loading wheel…</div>
   <div id="selectedGame" class="selectedGame hidden"></div>
-  <div class="wheelHint">The organiser's two games are selected centrally. Spin once for Game 1, then again for Game 2.</div>
+  <div class="wheelHint">All 10 weekend fixtures are on the wheel. The organiser's two games are selected centrally. Spin once for Game 1, then again for Game 2.</div>
 </div>
 
 <div class="card">
@@ -233,24 +233,26 @@ async function loadAllWeekendGames(weekStart){
     loads immediately and does not depend on an external football API.
   */
   const fixtures = [
-    {id:"cp-mci",home:"Crystal Palace",away:"Manchester City",kick:"2026-08-28T19:00:00+00:00"},
-    {id:"liv-nfo",home:"Liverpool",away:"Nottingham Forest",kick:"2026-08-29T11:30:00+00:00"},
-    {id:"bou-eve",home:"AFC Bournemouth",away:"Everton",kick:"2026-08-29T14:00:00+00:00"},
-    {id:"cov-hul",home:"Coventry City",away:"Hull City",kick:"2026-08-29T14:00:00+00:00"},
-    {id:"tot-new",home:"Tottenham Hotspur",away:"Newcastle United",kick:"2026-08-29T16:30:00+00:00"},
-    {id:"che-bha",home:"Chelsea",away:"Brighton & Hove Albion",kick:"2026-08-30T13:00:00+00:00"},
-    {id:"lee-bre",home:"Leeds United",away:"Brentford",kick:"2026-08-30T13:00:00+00:00"},
-    {id:"sun-ful",home:"Sunderland",away:"Fulham",kick:"2026-08-30T13:00:00+00:00"},
-    {id:"mun-ips",home:"Manchester United",away:"Ipswich Town",kick:"2026-08-30T15:30:00+00:00"},
-    {id:"avl-ars",home:"Aston Villa",away:"Arsenal",kick:"2026-08-31T19:00:00+00:00"}
+    {id:"ips-liv",home:"Ipswich Town",away:"Liverpool",kick:"2026-09-04T19:00:00+00:00"},
+    {id:"new-bou",home:"Newcastle United",away:"AFC Bournemouth",kick:"2026-09-05T11:30:00+00:00"},
+    {id:"bre-sun",home:"Brentford",away:"Sunderland",kick:"2026-09-05T14:00:00+00:00"},
+    {id:"bha-lee",home:"Brighton & Hove Albion",away:"Leeds United",kick:"2026-09-05T14:00:00+00:00"},
+    {id:"ful-cry",home:"Fulham",away:"Crystal Palace",kick:"2026-09-05T14:00:00+00:00"},
+    {id:"mci-cov",home:"Manchester City",away:"Coventry City",kick:"2026-09-05T14:00:00+00:00"},
+    {id:"nfo-tot",home:"Nottingham Forest",away:"Tottenham Hotspur",kick:"2026-09-05T14:00:00+00:00"},
+    {id:"hul-avl",home:"Hull City",away:"Aston Villa",kick:"2026-09-05T16:30:00+00:00"},
+    {id:"eve-mun",home:"Everton",away:"Manchester United",kick:"2026-09-06T13:00:00+00:00"},
+    {id:"ars-che",home:"Arsenal",away:"Chelsea",kick:"2026-09-06T15:30:00+00:00"}
   ];
 
   const wanted = String(weekStart || "").slice(0,10);
-  if(wanted === "2026-08-28" || wanted === "2026-08-29" || wanted === "2026-08-30" || wanted === "2026-08-31" || !wanted){
+
+  // Current SUPER 2s week: keep all 10 fixtures on the wheel.
+  if(!wanted || wanted >= "2026-09-04"){
     return fixtures;
   }
 
-  // Safe fallback for a later week: always include the two centrally selected games.
+  // For an older stored week, retain its centrally selected games.
   return currentGames.map((g,i)=>({
     id:"selected-"+i,
     home:g.home,
