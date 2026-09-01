@@ -153,7 +153,7 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 const GAME_ACCESS_PIN="2580";
 
-let currentWeek=null,playerId=null,currentGames=[],wheelGames=[];
+let currentWeek=null,playerId=null,playerName="",currentGames=[],wheelGames=[];
 let spinCount=0,spinning=false,wheelRotation=0,selectedIndex1=-1,selectedIndex2=-1,gameUnlocked=false;
 
 const $=id=>document.getElementById(id);
@@ -321,6 +321,7 @@ function showExistingPlayerForm(){
 }
 async function finishPlayer(id,name){
   playerId=id;
+  playerName=name;
   const {data:existing,error}=await sb.from("predictions").select("*")
     .eq("week_id",currentWeek.id).eq("player_id",playerId).maybeSingle();
   if(error)return msg("Could not check your prediction: "+error.message);
@@ -378,33 +379,43 @@ function showSubmitted(p){
   $("submittedCard").classList.remove("hidden");
   $("myPrediction").innerHTML=`<div class="game"><b>${esc(currentGames[0].home)} ${p.game1_home_score}–${p.game1_away_score} ${esc(currentGames[0].away)}</b></div><div class="game"><b>${esc(currentGames[1].home)} ${p.game2_home_score}–${p.game2_away_score} ${esc(currentGames[1].away)}</b></div>`;
 }
-async function showOthers(){
-  // Supabase only releases the full list after THIS player has submitted.
-  // This keeps predictions hidden until the player has locked their own scores.
+async function showOthers(retries=3){
+  // This RPC is deliberately protected in Supabase: it only returns
+  // submissions after THIS player has submitted their own prediction.
   const r=await sb.rpc("get_submitted_predictions",{
     p_week_id:currentWeek.id,
     p_player_id:playerId
   });
   if(r.error){
-    msg(r.error.message);
+    $("othersCard").classList.remove("hidden");
+    $("others").innerHTML='<div class="msg">⚠️ The other predictions could not be revealed yet. '+esc(r.error.message)+'</div>';
     return;
   }
 
-  const rows=r.data||[];
+  const allRows=Array.isArray(r.data)?r.data:[];
+  // The RPC includes every submitted player. Hide the current player here
+  // because their prediction is already shown in "Your predictions are locked".
+  const rows=allRows.filter(x=>String(x.player_name||"").toLowerCase()!==String(playerName||"").toLowerCase());
+
+  // Give Supabase a moment to finish committing the new submission.
+  if(!rows.length && retries>0){
+    setTimeout(()=>showOthers(retries-1),700);
+    return;
+  }
+
   $("othersCard").classList.remove("hidden");
   $("others").innerHTML=`
     <div class="msg" style="background:#e9fff2;border:1px solid #18a957;color:#116b39;font-weight:800;margin-bottom:10px">
-      🔓 ALL SUBMITTED PREDICTIONS ARE NOW REVEALED
+      🔓 OTHER PLAYERS' PREDICTIONS ARE NOW REVEALED
     </div>
     ${rows.length ? rows.map(x=>`
       <div class="listrow">
-        <b>${esc(x.player_name)}</b><br>
+        <b>${esc(x.player_name||"Player")}</b><br>
         Game 1: <strong>${x.game1_home_score}–${x.game1_away_score}</strong>
         &nbsp; | &nbsp;
         Game 2: <strong>${x.game2_home_score}–${x.game2_away_score}</strong>
       </div>`).join("") : '<div class="small">No other players have submitted yet.</div>'}`;
 
-  // Make the reveal immediately visible on a phone after submission.
   setTimeout(()=>$("othersCard").scrollIntoView({behavior:"smooth",block:"start"}),100);
 }
 async function loadWinner(){
