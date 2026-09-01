@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>SUPER 2s</title>
+<meta name="app-version" content="2026-09-01-fix2">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
@@ -216,25 +217,27 @@ async function loadAllWeekendGames(weekStart){
     The current Premier League weekend is kept locally here, so the wheel
     loads immediately and does not depend on an external football API.
   */
+  // Matchweek 3: Friday 4 September to Sunday 6 September 2026.
+  // These are the current Premier League fixtures for the week shown in Supabase.
   const fixtures = [
-    {id:"cp-mci",home:"Crystal Palace",away:"Manchester City",kick:"2026-08-28T19:00:00+00:00"},
-    {id:"liv-nfo",home:"Liverpool",away:"Nottingham Forest",kick:"2026-08-29T11:30:00+00:00"},
-    {id:"bou-eve",home:"AFC Bournemouth",away:"Everton",kick:"2026-08-29T14:00:00+00:00"},
-    {id:"cov-hul",home:"Coventry City",away:"Hull City",kick:"2026-08-29T14:00:00+00:00"},
-    {id:"tot-new",home:"Tottenham Hotspur",away:"Newcastle United",kick:"2026-08-29T16:30:00+00:00"},
-    {id:"che-bha",home:"Chelsea",away:"Brighton & Hove Albion",kick:"2026-08-30T13:00:00+00:00"},
-    {id:"lee-bre",home:"Leeds United",away:"Brentford",kick:"2026-08-30T13:00:00+00:00"},
-    {id:"sun-ful",home:"Sunderland",away:"Fulham",kick:"2026-08-30T13:00:00+00:00"},
-    {id:"mun-ips",home:"Manchester United",away:"Ipswich Town",kick:"2026-08-30T15:30:00+00:00"},
-    {id:"avl-ars",home:"Aston Villa",away:"Arsenal",kick:"2026-08-31T19:00:00+00:00"}
+    {id:"ips-liv",home:"Ipswich Town",away:"Liverpool",kick:"2026-09-04T19:00:00+00:00"},
+    {id:"new-bou",home:"Newcastle United",away:"AFC Bournemouth",kick:"2026-09-05T11:30:00+00:00"},
+    {id:"bre-sun",home:"Brentford",away:"Sunderland",kick:"2026-09-05T14:00:00+00:00"},
+    {id:"bha-lee",home:"Brighton & Hove Albion",away:"Leeds United",kick:"2026-09-05T14:00:00+00:00"},
+    {id:"ful-cry",home:"Fulham",away:"Crystal Palace",kick:"2026-09-05T14:00:00+00:00"},
+    {id:"mci-cov",home:"Manchester City",away:"Coventry City",kick:"2026-09-05T14:00:00+00:00"},
+    {id:"nfo-tot",home:"Nottingham Forest",away:"Tottenham Hotspur",kick:"2026-09-05T14:00:00+00:00"},
+    {id:"hul-avl",home:"Hull City",away:"Aston Villa",kick:"2026-09-05T16:30:00+00:00"},
+    {id:"eve-mun",home:"Everton",away:"Manchester United",kick:"2026-09-06T13:00:00+00:00"},
+    {id:"ars-che",home:"Arsenal",away:"Chelsea",kick:"2026-09-06T15:30:00+00:00"}
   ];
 
   const wanted = String(weekStart || "").slice(0,10);
-  if(wanted === "2026-08-28" || wanted === "2026-08-29" || wanted === "2026-08-30" || wanted === "2026-08-31" || !wanted){
+  if(wanted === "2026-09-04" || wanted === "2026-09-05" || wanted === "2026-09-06" || !wanted){
     return fixtures;
   }
 
-  // Safe fallback for a later week: always include the two centrally selected games.
+  // For a future week, always keep the two centrally selected games on the wheel.
   return currentGames.map((g,i)=>({
     id:"selected-"+i,
     home:g.home,
@@ -270,7 +273,7 @@ function renderPredictionForm(values=null,locked=false){
   $("predGames").innerHTML=currentGames.map(g=>{
     const h=values ? values[`game${g.n}_home_score`] : "";
     const a=values ? values[`game${g.n}_away_score`] : "";
-    return `<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div><label>Score</label><div class="score"><input id="g${g.n}h" inputmode="numeric" type="number" min="0" max="99" placeholder="Home" value="${h??""}" ${locked?'disabled class="locked"':''}><input id="g${g.n}a" inputmode="numeric" type="number" min="0" max="99" placeholder="Away" value="${a??""}" ${locked?'disabled class="locked"':''}></div></div>`;
+    return `<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div><label>Score</label><div class="score"><input id="g${g.n}h" inputmode="numeric" type="number" min="0" max="99" placeholder="Home" value="${h??""}" ${locked?'disabled readonly class="locked" style="background:#d1d5db!important;color:#4b5563!important;border-color:#9ca3af!important;opacity:1!important;pointer-events:none"':''}><input id="g${g.n}a" inputmode="numeric" type="number" min="0" max="99" placeholder="Away" value="${a??""}" ${locked?'disabled readonly class="locked" style="background:#d1d5db!important;color:#4b5563!important;border-color:#9ca3af!important;opacity:1!important;pointer-events:none"':''}></div></div>`;
   }).join("");
   $("predForm").classList.remove("hidden");
   if(locked){
