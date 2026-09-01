@@ -339,33 +339,41 @@ function showSubmitted(p){
   $("submittedCard").classList.remove("hidden");
   $("myPrediction").innerHTML=`<div class="game"><b>${esc(currentGames[0].home)} ${p.game1_home_score}–${p.game1_away_score} ${esc(currentGames[0].away)}</b></div><div class="game"><b>${esc(currentGames[1].home)} ${p.game2_home_score}–${p.game2_away_score} ${esc(currentGames[1].away)}</b></div>`;
 }
-async function showOthers(){
-  // Supabase only releases the full list after THIS player has submitted.
-  // This keeps predictions hidden until the player has locked their own scores.
+async function showOthers(retries=2){
+  // IMPORTANT: the database function controls the reveal. It must only return
+  // other submitted players after THIS player has submitted and locked.
   const r=await sb.rpc("get_submitted_predictions",{
     p_week_id:currentWeek.id,
     p_player_id:playerId
   });
+
   if(r.error){
-    msg(r.error.message);
+    $("othersCard").classList.remove("hidden");
+    $("others").innerHTML='<div class="msg">⚠️ Could not reveal the other predictions: '+esc(r.error.message)+'</div>';
     return;
   }
 
-  const rows=r.data||[];
+  const rows=Array.isArray(r.data)?r.data:[];
+
+  // If Supabase has not caught up immediately after the submit, retry once/twice.
+  if(!rows.length && retries>0){
+    setTimeout(()=>showOthers(retries-1),700);
+    return;
+  }
+
   $("othersCard").classList.remove("hidden");
   $("others").innerHTML=`
     <div class="msg" style="background:#e9fff2;border:1px solid #18a957;color:#116b39;font-weight:800;margin-bottom:10px">
-      🔓 ALL SUBMITTED PREDICTIONS ARE NOW REVEALED
+      🔓 ALL OTHER SUBMITTED PREDICTIONS ARE NOW REVEALED
     </div>
     ${rows.length ? rows.map(x=>`
       <div class="listrow">
-        <b>${esc(x.player_name)}</b><br>
+        <b>${esc(x.player_name ?? x.name ?? "Player")}</b><br>
         Game 1: <strong>${x.game1_home_score}–${x.game1_away_score}</strong>
         &nbsp; | &nbsp;
         Game 2: <strong>${x.game2_home_score}–${x.game2_away_score}</strong>
       </div>`).join("") : '<div class="small">No other players have submitted yet.</div>'}`;
 
-  // Make the reveal immediately visible on a phone after submission.
   setTimeout(()=>$("othersCard").scrollIntoView({behavior:"smooth",block:"start"}),100);
 }
 async function loadWinner(){
