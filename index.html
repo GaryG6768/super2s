@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>SUPER 2s</title>
+<!-- SUPER 2s FINAL: locked score boxes + post-submit reveal -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
@@ -13,7 +14,7 @@ body{margin:0;font-family:Arial,sans-serif;background:#f5f6f8;color:#111827;over
 .card{background:#fff;border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 3px 14px #00000010}
 h2{margin:0 0 12px;font-size:22px}.game{border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin:10px 0}.game b{display:block;font-size:17px}.kick{color:#6b7280;font-size:14px;margin-top:5px}
 label{font-size:14px;font-weight:700;display:block;margin:12px 0 5px}
-input{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:10px;font-size:17px} input:disabled{background:#e5e7eb;color:#6b7280;border-color:#c7cbd1;opacity:1;cursor:not-allowed}
+input{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:10px;font-size:17px} input:disabled{background:#d1d5db!important;color:#4b5563!important;border:2px solid #9ca3af!important;opacity:1!important;cursor:not-allowed;box-shadow:inset 0 1px 3px #00000012}.game.lockedGame{background:#eef0f2;border-color:#b8bec6}.lockedLabel{color:#6b7280}
 .score{display:flex;gap:10px}.score input{text-align:center}
 .btn{width:100%;border:0;border-radius:12px;padding:14px;font-size:17px;font-weight:800;margin-top:14px;background:#111827;color:#fff}
 .btn:disabled{opacity:.5}.msg{padding:12px;border-radius:10px;background:#f3f4f6;margin-top:12px}.small{font-size:13px;color:#6b7280}
@@ -332,19 +333,23 @@ async function finishPlayer(id,name){
   $("existingPlayerBtn").classList.add("hidden");
 
   if(existing){
-    // Existing submission: show the scores in the normal boxes, but lock them.
+    // Existing submission: put their saved scores back into the same score boxes
+    // and permanently disable those boxes.
     renderPredictionForm();
     $("predForm").classList.remove("hidden");
     ["g1h","g1a","g2h","g2a"].forEach(id=>{
-      $(id).disabled=true;
+      const el=$(id);
+      if(el){ el.disabled=true; el.readOnly=true; }
     });
     $("g1h").value=existing.game1_home_score;
     $("g1a").value=existing.game1_away_score;
     $("g2h").value=existing.game2_home_score;
     $("g2a").value=existing.game2_away_score;
+    document.querySelectorAll("#predGames .game").forEach(el=>el.classList.add("lockedGame"));
+    document.querySelectorAll("#predGames label").forEach(el=>{el.textContent="🔒 SCORE — LOCKED";el.classList.add("lockedLabel")});
     $("submitBtn").disabled=true;
-    $("submitBtn").textContent="🔒 PREDICTIONS ALREADY SUBMITTED — LOCKED";
-    $("message").innerHTML='<div class="msg">✅ Your predictions have already been submitted and are permanently locked. Your score boxes are greyed out below.</div>';
+    $("submitBtn").style.display="none";
+    $("message").innerHTML='<div class="msg">🔒 You have already submitted this week. Your saved scores are shown below in grey and cannot be changed.</div>';
     showSubmitted(existing);
     await showOthers();
     return;
@@ -393,12 +398,15 @@ async function submit(){
   const {data:p}=await sb.from("predictions").select("*").eq("id",r.data).single();
   if(!p){msg("Your prediction was saved, but could not be displayed.");return}
   showSubmitted(p);
-  // Keep the score boxes visible but greyed out after submission.
+  // After submitting, keep the score boxes visible, grey and permanently locked.
   ["g1h","g1a","g2h","g2a"].forEach(id=>{
-    if($(id))$(id).disabled=true;
+    const el=$(id);
+    if(el){ el.disabled=true; el.readOnly=true; }
   });
+  document.querySelectorAll("#predGames .game").forEach(el=>el.classList.add("lockedGame"));
+  document.querySelectorAll("#predGames label").forEach(el=>{el.textContent="🔒 SCORE — LOCKED";el.classList.add("lockedLabel")});
   $("submitBtn").disabled=true;
-  $("submitBtn").textContent="🔒 PREDICTIONS SUBMITTED — LOCKED";
+  $("submitBtn").style.display="none";
   $("message").innerHTML='<div class="msg">✅ Your predictions are locked. The other players’ submitted scores are now revealed below.</div>';
   await showOthers();
 }
