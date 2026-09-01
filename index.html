@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>SUPER 2s</title>
-<meta name="app-version" content="2026-09-01-fix2">
+<meta name="app-version" content="2026-09-01-fix3-wheel-only">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
@@ -70,12 +70,6 @@ input{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:10px;font-s
   <div id="spinStatus" class="spinStatus">Loading wheel…</div>
   <div id="selectedGame" class="selectedGame hidden"></div>
   <div class="wheelHint">The organiser's two games are selected centrally. Spin once for Game 1, then again for Game 2.</div>
-</div>
-
-<div class="card">
-  <h2>🎡 This week's games</h2>
-  <div id="games"><div class="msg">Loading fixtures…</div></div>
-  <div class="small">Games are selected centrally. Both kick-offs must be at least 2 hours apart and fixtures must be Friday–Monday.</div>
 </div>
 
 <div class="card accessCard" id="accessCard">
@@ -251,9 +245,9 @@ async function loadWeek(){
   const queryPromise=sb.from("weeks").select("*").order("week_start",{ascending:false}).limit(1).maybeSingle();
   const timeoutPromise=new Promise(resolve=>setTimeout(()=>resolve({data:null,error:{message:"The game database took too long to respond. Please refresh the page."}}),10000));
   const {data,error}=await Promise.race([queryPromise,timeoutPromise]);
-  if(error){$("games").innerHTML='<div class="msg">Database connection error: '+esc(error.message)+'</div>';$("spinStatus").textContent="Database connection error";return}
+  if(error){$("spinStatus").textContent="Database connection error";return}
   currentWeek=data;
-  if(!data){$("games").innerHTML='<div class="msg">No games have been selected yet.</div>';$("spinStatus").textContent="No games selected";return}
+  if(!data){$("spinStatus").textContent="No games selected";return}
   currentGames=[
     {home:data.game1_home,away:data.game1_away,kick:data.game1_kickoff,n:1},
     {home:data.game2_home,away:data.game2_away,kick:data.game2_kickoff,n:2}
@@ -263,12 +257,10 @@ async function loadWeek(){
   const selected=all.filter(g=>selectedKeys.has(g.home+"|"+g.away)),others=all.filter(g=>!selectedKeys.has(g.home+"|"+g.away));
   wheelGames=[...selected,...others].slice(0,10);
   if(wheelGames.length<2||!currentGames.every(g=>wheelGames.some(x=>x.home===g.home&&x.away===g.away)))wheelGames=[...currentGames.map(g=>({...g})),...others].slice(0,10);
-  $("wheelCount").textContent=wheelGames.length+" eligible fixtures";renderGames();setupWheel();await loadWinner();
+  $("wheelCount").textContent=wheelGames.length+" fixtures on the wheel";setupWheel();await loadWinner();
 }
 
-function renderGames(){
-  $("games").innerHTML=currentGames.map(g=>`<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div></div>`).join("");
-}
+function renderGames(){ /* Fixture list intentionally removed; fixtures are shown only on the wheel. */ }
 function renderPredictionForm(values=null,locked=false){
   $("predGames").innerHTML=currentGames.map(g=>{
     const h=values ? values[`game${g.n}_home_score`] : "";
