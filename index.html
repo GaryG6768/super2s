@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>SUPER 2s</title>
-<!-- SUPER 2s FINAL: locked score boxes + post-submit reveal -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
@@ -14,8 +13,8 @@ body{margin:0;font-family:Arial,sans-serif;background:#f5f6f8;color:#111827;over
 .card{background:#fff;border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 3px 14px #00000010}
 h2{margin:0 0 12px;font-size:22px}.game{border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin:10px 0}.game b{display:block;font-size:17px}.kick{color:#6b7280;font-size:14px;margin-top:5px}
 label{font-size:14px;font-weight:700;display:block;margin:12px 0 5px}
-input{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:10px;font-size:17px} input:disabled{background:#d1d5db!important;color:#4b5563!important;border:2px solid #9ca3af!important;opacity:1!important;cursor:not-allowed;box-shadow:inset 0 1px 3px #00000012}.game.lockedGame{background:#eef0f2;border-color:#b8bec6}.lockedLabel{color:#6b7280}
-.score{display:flex;gap:10px}.score input{text-align:center}
+input{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:10px;font-size:17px}
+.score{display:flex;gap:10px}.score input{text-align:center}.score input.locked{background:#d1d5db;color:#4b5563;border-color:#9ca3af;font-weight:800;cursor:not-allowed}
 .btn{width:100%;border:0;border-radius:12px;padding:14px;font-size:17px;font-weight:800;margin-top:14px;background:#111827;color:#fff}
 .btn:disabled{opacity:.5}.msg{padding:12px;border-radius:10px;background:#f3f4f6;margin-top:12px}.small{font-size:13px;color:#6b7280}
 .hidden{display:none}.listrow{padding:10px 0;border-bottom:1px solid #eee}.listrow:last-child{border-bottom:0}
@@ -38,10 +37,6 @@ input{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:10px;font-s
 .selectedGame{margin-top:12px;background:#f7fbff;color:#111;border-radius:14px;padding:12px;text-align:left;border:2px solid #1785ff}.selectedGame strong{display:block;font-size:17px}.selectedGame small{color:#6b7280}
 .wheelHint{font-size:13px;color:#b9c7d9;margin-top:12px;line-height:1.4}
 .accessCard{background:#eef6ff;border:2px solid #1785ff}
-.playerChoice{margin-top:14px}.playerChoiceTitle{font-size:18px;font-weight:900;margin-bottom:10px}
-.playerChoiceRow{display:flex;gap:10px}.choiceBtn{flex:1;background:linear-gradient(#1688ff,#0756c7);color:#fff}
-.choiceBtn.secondary{background:#17334f}.choiceBtn.selected{outline:4px solid #18c96b;outline-offset:2px}
-.choiceForm{margin-top:12px;padding-top:8px;border-top:1px solid #dbe4ee}
 .accessOk{background:#e9fff2!important;border-color:#18a957!important}
 .unlockBtn{background:linear-gradient(#1688ff,#0756c7)}
 @media(max-width:430px){
@@ -73,13 +68,13 @@ input{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:10px;font-s
   <button class="btn" id="newWeekBtn" type="button" style="background:#17334f">NEW WEEK</button>
   <div id="spinStatus" class="spinStatus">Loading wheel…</div>
   <div id="selectedGame" class="selectedGame hidden"></div>
-  <div class="wheelHint">All 10 weekend fixtures are on the wheel. The organiser's two games are selected centrally. Spin once for Game 1, then again for Game 2.</div>
+  <div class="wheelHint">The organiser's two games are selected centrally. Spin once for Game 1, then again for Game 2.</div>
 </div>
 
 <div class="card">
-  <h2>🎡 This week's possible games</h2>
+  <h2>🎡 This week's games</h2>
   <div id="games"><div class="msg">Loading fixtures…</div></div>
-  <div class="small">These are all 10 possible fixtures. The two SUPER 2s games are kept secret until the wheel is spun.</div>
+  <div class="small">Games are selected centrally. Both kick-offs must be at least 2 hours apart and fixtures must be Friday–Monday.</div>
 </div>
 
 <div class="card accessCard" id="accessCard">
@@ -93,33 +88,21 @@ input{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:10px;font-s
 
 <div class="card hidden" id="loginCard">
   <h2>📝 Player</h2>
-  <div class="playerChoice">
-    <div class="playerChoiceTitle">Are you a new or existing player?</div>
-    <div class="playerChoiceRow">
-      <button class="btn choiceBtn" id="newPlayerBtn" type="button">🆕 NEW PLAYER</button>
-      <button class="btn choiceBtn secondary" id="existingPlayerBtn" type="button">🔑 EXISTING PLAYER</button>
-    </div>
-
-    <div id="newPlayerForm" class="choiceForm hidden">
-      <h2>🆕 Create your player account</h2>
-      <label>Your unique name</label>
-      <input id="newName" autocomplete="name" placeholder="Enter your name">
-      <label>Create your 4-digit PIN</label>
-      <input id="newPin" inputmode="numeric" maxlength="4" placeholder="4 digits">
-      <div class="small" style="margin-top:6px">Choose a 4-digit PIN you will remember.</div>
-      <button class="btn" id="createPlayerBtn" type="button">CREATE PLAYER &amp; CONTINUE</button>
-    </div>
-
-    <div id="existingPlayerForm" class="choiceForm hidden">
-      <h2>🔑 Existing player</h2>
-      <label>Your unique name</label>
-      <input id="existingName" autocomplete="name" placeholder="Enter your name">
-      <label>Your 4-digit PIN</label>
-      <input id="existingPin" inputmode="numeric" maxlength="4" placeholder="4 digits">
-      <button class="btn" id="loginPlayerBtn" type="button">LOG IN &amp; CONTINUE</button>
+  <div id="playerChoice">
+    <div style="font-size:18px;font-weight:800;margin-bottom:10px">Are you a new or existing player?</div>
+    <div class="spinRow">
+      <button class="btn" id="newPlayerBtn" type="button" style="background:linear-gradient(#1688ff,#0756c7)">🆕 NEW PLAYER</button>
+      <button class="btn" id="existingPlayerBtn" type="button" style="background:#17334f">🔑 EXISTING PLAYER</button>
     </div>
   </div>
-
+  <div id="playerLogin" class="hidden">
+    <label>Your unique name</label>
+    <input id="name" autocomplete="name" placeholder="Enter your name">
+    <label>Your 4-digit PIN</label>
+    <input id="pin" inputmode="numeric" maxlength="4" placeholder="4 digits">
+    <div id="playerHelp" class="small" style="margin-top:6px"></div>
+    <button class="btn" id="continueBtn" type="button">CONTINUE</button>
+  </div>
   <div id="predForm" class="hidden">
     <div id="predGames"></div>
     <button class="btn" id="submitBtn" type="button">🔒 SUBMIT &amp; LOCK PREDICTIONS</button>
@@ -154,7 +137,7 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 const GAME_ACCESS_PIN="2580";
 
-let currentWeek=null,playerId=null,playerName="",currentGames=[],wheelGames=[];
+let currentWeek=null,playerId=null,currentGames=[],wheelGames=[];
 let spinCount=0,spinning=false,wheelRotation=0,selectedIndex1=-1,selectedIndex2=-1,gameUnlocked=false;
 
 const $=id=>document.getElementById(id);
@@ -220,21 +203,7 @@ function spinWheel(which){
     $("selectedGame").innerHTML+=`<div style="margin:8px 0"><strong>Game ${which}: ${esc(picked.home)} v ${esc(picked.away)}</strong><small>${dateLabel(picked.kick)}</small></div>`;
     $("selectedGame").classList.remove("hidden");drawWheel();
     if(spinCount===1){$("spinBtn2").disabled=false;$("spinBtn2").classList.add("ready");$("spinStatus").textContent="Game 1 selected — now spin Game 2";}
-    else{
-      $("spinBtn1").disabled=true;
-      $("spinBtn2").disabled=true;
-      $("spinBtn2").classList.remove("ready");
-      $("spinBtn2").textContent="BOTH GAMES SELECTED ✓";
-      $("spinStatus").textContent="Both SUPER 2s games revealed";
-      // If a player has already chosen NEW/EXISTING PLAYER, only now show
-      // the prediction form. This prevents the central choices being exposed
-      // through the prediction screen before the wheel is spun.
-      if(playerId){
-        renderPredictionForm();
-        $("predForm").classList.remove("hidden");
-        $("message").innerHTML='<div class="msg">🎯 Both games revealed. Enter your two exact-score predictions.</div>';
-      }
-    }
+    else{$("spinBtn1").disabled=true;$("spinBtn2").disabled=true;$("spinBtn2").classList.remove("ready");$("spinBtn2").textContent="BOTH GAMES SELECTED ✓";$("spinStatus").textContent="Both SUPER 2s games revealed";}
   },5500);
 }
 
@@ -248,26 +217,24 @@ async function loadAllWeekendGames(weekStart){
     loads immediately and does not depend on an external football API.
   */
   const fixtures = [
-    {id:"ips-liv",home:"Ipswich Town",away:"Liverpool",kick:"2026-09-04T19:00:00+00:00"},
-    {id:"new-bou",home:"Newcastle United",away:"AFC Bournemouth",kick:"2026-09-05T11:30:00+00:00"},
-    {id:"bre-sun",home:"Brentford",away:"Sunderland",kick:"2026-09-05T14:00:00+00:00"},
-    {id:"bha-lee",home:"Brighton & Hove Albion",away:"Leeds United",kick:"2026-09-05T14:00:00+00:00"},
-    {id:"ful-cry",home:"Fulham",away:"Crystal Palace",kick:"2026-09-05T14:00:00+00:00"},
-    {id:"mci-cov",home:"Manchester City",away:"Coventry City",kick:"2026-09-05T14:00:00+00:00"},
-    {id:"nfo-tot",home:"Nottingham Forest",away:"Tottenham Hotspur",kick:"2026-09-05T14:00:00+00:00"},
-    {id:"hul-avl",home:"Hull City",away:"Aston Villa",kick:"2026-09-05T16:30:00+00:00"},
-    {id:"eve-mun",home:"Everton",away:"Manchester United",kick:"2026-09-06T13:00:00+00:00"},
-    {id:"ars-che",home:"Arsenal",away:"Chelsea",kick:"2026-09-06T15:30:00+00:00"}
+    {id:"cp-mci",home:"Crystal Palace",away:"Manchester City",kick:"2026-08-28T19:00:00+00:00"},
+    {id:"liv-nfo",home:"Liverpool",away:"Nottingham Forest",kick:"2026-08-29T11:30:00+00:00"},
+    {id:"bou-eve",home:"AFC Bournemouth",away:"Everton",kick:"2026-08-29T14:00:00+00:00"},
+    {id:"cov-hul",home:"Coventry City",away:"Hull City",kick:"2026-08-29T14:00:00+00:00"},
+    {id:"tot-new",home:"Tottenham Hotspur",away:"Newcastle United",kick:"2026-08-29T16:30:00+00:00"},
+    {id:"che-bha",home:"Chelsea",away:"Brighton & Hove Albion",kick:"2026-08-30T13:00:00+00:00"},
+    {id:"lee-bre",home:"Leeds United",away:"Brentford",kick:"2026-08-30T13:00:00+00:00"},
+    {id:"sun-ful",home:"Sunderland",away:"Fulham",kick:"2026-08-30T13:00:00+00:00"},
+    {id:"mun-ips",home:"Manchester United",away:"Ipswich Town",kick:"2026-08-30T15:30:00+00:00"},
+    {id:"avl-ars",home:"Aston Villa",away:"Arsenal",kick:"2026-08-31T19:00:00+00:00"}
   ];
 
   const wanted = String(weekStart || "").slice(0,10);
-
-  // Current SUPER 2s week: keep all 10 fixtures on the wheel.
-  if(!wanted || wanted >= "2026-09-04"){
+  if(wanted === "2026-08-28" || wanted === "2026-08-29" || wanted === "2026-08-30" || wanted === "2026-08-31" || !wanted){
     return fixtures;
   }
 
-  // For an older stored week, retain its centrally selected games.
+  // Safe fallback for a later week: always include the two centrally selected games.
   return currentGames.map((g,i)=>({
     id:"selected-"+i,
     home:g.home,
@@ -297,160 +264,154 @@ async function loadWeek(){
 }
 
 function renderGames(){
-  // IMPORTANT: currentGames contains the two centrally selected games.
-  // Never render currentGames here because that would reveal the result
-  // before each player spins the wheel.
-  $("games").innerHTML=wheelGames.map(g=>`<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div></div>`).join("");
+  $("games").innerHTML=currentGames.map(g=>`<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div></div>`).join("");
 }
-function renderPredictionForm(){
-  $("predGames").innerHTML=currentGames.map(g=>`<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div><label>Score</label><div class="score"><input id="g${g.n}h" inputmode="numeric" type="number" min="0" max="99" placeholder="Home"><input id="g${g.n}a" inputmode="numeric" type="number" min="0" max="99" placeholder="Away"></div></div>`).join("");
+function renderPredictionForm(values=null,locked=false){
+  $("predGames").innerHTML=currentGames.map(g=>{
+    const h=values ? values[`game${g.n}_home_score`] : "";
+    const a=values ? values[`game${g.n}_away_score`] : "";
+    return `<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div><label>Score</label><div class="score"><input id="g${g.n}h" inputmode="numeric" type="number" min="0" max="99" placeholder="Home" value="${h??""}" ${locked?'disabled class="locked"':''}><input id="g${g.n}a" inputmode="numeric" type="number" min="0" max="99" placeholder="Away" value="${a??""}" ${locked?'disabled class="locked"':''}></div></div>`;
+  }).join("");
+  $("predForm").classList.remove("hidden");
+  if(locked){
+    $("submitBtn").classList.add("hidden");
+  }else{
+    $("submitBtn").classList.remove("hidden");
+  }
 }
 
-function showNewPlayerForm(){
-  $("newPlayerForm").classList.remove("hidden");
-  $("existingPlayerForm").classList.add("hidden");
-  $("newPlayerBtn").classList.add("selected");
-  $("existingPlayerBtn").classList.remove("selected");
-  $("newName").focus();
+function resetPlayerView(){
+  $("playerChoice").classList.remove("hidden");
+  $("playerLogin").classList.add("hidden");
+  $("predForm").classList.add("hidden");
+  $("submittedCard").classList.add("hidden");
+  $("othersCard").classList.add("hidden");
+  $("message").innerHTML="";
+  $("name").value="";
+  $("pin").value="";
+  playerId=null;
 }
-function showExistingPlayerForm(){
-  $("existingPlayerForm").classList.remove("hidden");
-  $("newPlayerForm").classList.add("hidden");
-  $("existingPlayerBtn").classList.add("selected");
-  $("newPlayerBtn").classList.remove("selected");
-  $("existingName").focus();
-}
-async function finishPlayer(id,name){
-  playerId=id;
-  playerName=name;
-  const {data:existing,error}=await sb.from("predictions").select("*")
-    .eq("week_id",currentWeek.id).eq("player_id",playerId).maybeSingle();
-  if(error)return msg("Could not check your prediction: "+error.message);
 
-  $("newPlayerForm").classList.add("hidden");
-  $("existingPlayerForm").classList.add("hidden");
-  $("newPlayerBtn").classList.add("hidden");
-  $("existingPlayerBtn").classList.add("hidden");
+function choosePlayerMode(mode){
+  $("playerChoice").classList.add("hidden");
+  $("playerLogin").classList.remove("hidden");
+  $("continueBtn").disabled=false;
+  $("message").innerHTML="";
+  if(mode==="new") {
+    $("playerHelp").textContent="New player: your name and PIN will create your player account.";
+  } else {
+    $("playerHelp").textContent="Existing player: enter the name and PIN you used when you registered.";
+  }
+  $("continueBtn").dataset.mode=mode;
+}
+
+async function continuePlayer(){
+  if(!gameUnlocked)return msg("Please enter the Game PIN first.");
+  const name=$("name").value.trim();
+  const pin=$("pin").value.trim();
+  const mode=$("continueBtn").dataset.mode;
+
+  if(name.length<2)return msg("Please enter your name.");
+  if(!/^\d{4}$/.test(pin))return msg("PIN must be exactly 4 digits.");
+  if(!currentWeek)return msg("This week's games are not available yet.");
+
+  $("continueBtn").disabled=true;
+  $("message").innerHTML="";
+
+  let r;
+  if(mode==="existing") {
+    // Existing player must be found with the correct name + PIN.
+    r=await sb.rpc("check_player",{p_name:name,p_pin:pin});
+    if(r.error || !r.data){
+      $("continueBtn").disabled=false;
+      return msg("❌ Existing player not found. Please check your name and 4-digit PIN.");
+    }
+  } else {
+    // New player must be genuinely new.
+    const check=await sb.rpc("check_player",{p_name:name,p_pin:pin});
+    if(!check.error && check.data){
+      $("continueBtn").disabled=false;
+      return msg("❌ That player already exists. Please choose EXISTING PLAYER and enter the correct PIN.");
+    }
+    r=await sb.rpc("create_player",{p_name:name,p_pin:pin});
+    if(r.error){
+      $("continueBtn").disabled=false;
+      return msg(r.error.message);
+    }
+    $("message").innerHTML='<div class="msg">✅ New player account created for <b>'+esc(name)+'</b>.</div>';
+  }
+
+  playerId=r.data;
+
+  const {data:existing,error:predictionError}=await sb
+    .from("predictions")
+    .select("*")
+    .eq("week_id",currentWeek.id)
+    .eq("player_id",playerId)
+    .maybeSingle();
+
+  if(predictionError){
+    $("continueBtn").disabled=false;
+    return msg("Could not check your prediction: "+predictionError.message);
+  }
 
   if(existing){
-    // Existing submission: put their saved scores back into the same score boxes
-    // and permanently disable those boxes.
-    renderPredictionForm();
-    $("predForm").classList.remove("hidden");
-    ["g1h","g1a","g2h","g2a"].forEach(id=>{
-      const el=$(id);
-      if(el){ el.disabled=true; el.readOnly=true; }
-    });
-    $("g1h").value=existing.game1_home_score;
-    $("g1a").value=existing.game1_away_score;
-    $("g2h").value=existing.game2_home_score;
-    $("g2a").value=existing.game2_away_score;
-    document.querySelectorAll("#predGames .game").forEach(el=>el.classList.add("lockedGame"));
-    document.querySelectorAll("#predGames label").forEach(el=>{el.textContent="🔒 SCORE — LOCKED";el.classList.add("lockedLabel")});
-    $("submitBtn").disabled=true;
-    $("submitBtn").style.display="none";
-    $("message").innerHTML='<div class="msg">🔒 You have already submitted this week. Your saved scores are shown below in grey and cannot be changed.</div>';
-    showSubmitted(existing);
+    // Already submitted this week: show the scores in grey, disabled boxes.
+    renderPredictionForm(existing,true);
+    $("playerLogin").classList.add("hidden");
+    $("continueBtn").disabled=false;
+    $("submittedCard").classList.remove("hidden");
+    $("myPrediction").innerHTML='<div class="msg">🔒 Your prediction for this week has already been submitted and is permanently locked.</div>';
     await showOthers();
     return;
   }
 
-  if(spinCount===2){
-    renderPredictionForm();
-    $("predForm").classList.remove("hidden");
-    $("submitBtn").disabled=false;
-    $("submitBtn").textContent="🔒 SUBMIT & LOCK PREDICTIONS";
-    $("message").innerHTML='<div class="msg">🎯 Both games have now been revealed. Enter your two exact-score predictions.</div>';
-  }else{
-    $("predForm").classList.add("hidden");
-    $("message").innerHTML='<div class="msg">✅ Player ready. Spin both games first; your prediction form will appear only after Game 2 is revealed.</div>';
-  }
-}
-async function createNewPlayer(){
-  if(!gameUnlocked)return msg("Please enter the Game PIN first.");
-  const name=$("newName").value.trim(),pin=$("newPin").value.trim();
-  if(name.length<2)return msg("Please enter your name.");
-  if(!/^\d{4}$/.test(pin))return msg("PIN must be exactly 4 digits.");
-  $("createPlayerBtn").disabled=true;
-  const r=await sb.rpc("create_player",{p_name:name,p_pin:pin});
-  if(r.error){$("createPlayerBtn").disabled=false;return msg(r.error.message);}
-  $("message").innerHTML='<div class="msg">✅ New player account created for <b>'+esc(name)+'</b>. Now enter your two predictions.</div>';
-  await finishPlayer(r.data,name);
-}
-async function loginExistingPlayer(){
-  if(!gameUnlocked)return msg("Please enter the Game PIN first.");
-  const name=$("existingName").value.trim(),pin=$("existingPin").value.trim();
-  if(name.length<2)return msg("Please enter your name.");
-  if(!/^\d{4}$/.test(pin))return msg("PIN must be exactly 4 digits.");
-  $("loginPlayerBtn").disabled=true;
-  const r=await sb.rpc("check_player",{p_name:name,p_pin:pin});
-  if(r.error){$("loginPlayerBtn").disabled=false;return msg(r.error.message);}
-  $("message").innerHTML='<div class="msg">✅ Existing player verified. Now enter your two predictions.</div>';
-  await finishPlayer(r.data,name);
+  renderPredictionForm();
+  $("playerLogin").classList.add("hidden");
 }
 
 async function submit(){
   if(!gameUnlocked)return msg("Please enter the Game PIN first.");
+  if(!playerId)return msg("Please select NEW PLAYER or EXISTING PLAYER first.");
   const vals=["g1h","g1a","g2h","g2a"].map(id=>$(id).value);
   if(vals.some(v=>v===""||Number(v)<0))return msg("Please enter all four scores.");
-  const r=await sb.rpc("submit_prediction",{p_week_id:currentWeek.id,p_player_id:playerId,p_game1_home:Number(vals[0]),p_game1_away:Number(vals[1]),p_game2_home:Number(vals[2]),p_game2_away:Number(vals[3])});
-  if(r.error){msg(r.error.message);return}
-  const {data:p}=await sb.from("predictions").select("*").eq("id",r.data).single();
-  if(!p){msg("Your prediction was saved, but could not be displayed.");return}
-  showSubmitted(p);
-  // After submitting, keep the score boxes visible, grey and permanently locked.
-  ["g1h","g1a","g2h","g2a"].forEach(id=>{
-    const el=$(id);
-    if(el){ el.disabled=true; el.readOnly=true; }
-  });
-  document.querySelectorAll("#predGames .game").forEach(el=>el.classList.add("lockedGame"));
-  document.querySelectorAll("#predGames label").forEach(el=>{el.textContent="🔒 SCORE — LOCKED";el.classList.add("lockedLabel")});
   $("submitBtn").disabled=true;
-  $("submitBtn").style.display="none";
-  $("message").innerHTML='<div class="msg">✅ Your predictions are locked. The other players’ submitted scores are now revealed below.</div>';
+  const r=await sb.rpc("submit_prediction",{p_week_id:currentWeek.id,p_player_id:playerId,p_game1_home:Number(vals[0]),p_game1_away:Number(vals[1]),p_game2_home:Number(vals[2]),p_game2_away:Number(vals[3])});
+  if(r.error){$("submitBtn").disabled=false;msg(r.error.message);return}
+  const {data:p}=await sb.from("predictions").select("*").eq("id",r.data).single();
+  renderPredictionForm(p,true);
+  $("playerLogin").classList.add("hidden");
+  $("submittedCard").classList.remove("hidden");
+  $("myPrediction").innerHTML='<div class="msg">🔒 Your prediction has been submitted and is now permanently locked.</div>';
   await showOthers();
 }
-function showSubmitted(p){
-  $("submittedCard").classList.remove("hidden");
-  $("myPrediction").innerHTML=`<div class="game"><b>${esc(currentGames[0].home)} ${p.game1_home_score}–${p.game1_away_score} ${esc(currentGames[0].away)}</b></div><div class="game"><b>${esc(currentGames[1].home)} ${p.game2_home_score}–${p.game2_away_score} ${esc(currentGames[1].away)}</b></div>`;
-}
-async function showOthers(retries=3){
-  // This RPC is deliberately protected in Supabase: it only returns
-  // submissions after THIS player has submitted their own prediction.
+async function showOthers(){
+  // Supabase only releases the full list after THIS player has submitted.
+  // This keeps predictions hidden until the player has locked their own scores.
   const r=await sb.rpc("get_submitted_predictions",{
     p_week_id:currentWeek.id,
     p_player_id:playerId
   });
   if(r.error){
-    $("othersCard").classList.remove("hidden");
-    $("others").innerHTML='<div class="msg">⚠️ The other predictions could not be revealed yet. '+esc(r.error.message)+'</div>';
+    msg(r.error.message);
     return;
   }
 
-  const allRows=Array.isArray(r.data)?r.data:[];
-  // The RPC includes every submitted player. Hide the current player here
-  // because their prediction is already shown in "Your predictions are locked".
-  const rows=allRows.filter(x=>String(x.player_name||"").toLowerCase()!==String(playerName||"").toLowerCase());
-
-  // Give Supabase a moment to finish committing the new submission.
-  if(!rows.length && retries>0){
-    setTimeout(()=>showOthers(retries-1),700);
-    return;
-  }
-
+  const rows=r.data||[];
   $("othersCard").classList.remove("hidden");
   $("others").innerHTML=`
     <div class="msg" style="background:#e9fff2;border:1px solid #18a957;color:#116b39;font-weight:800;margin-bottom:10px">
-      🔓 OTHER PLAYERS' PREDICTIONS ARE NOW REVEALED
+      🔓 ALL SUBMITTED PREDICTIONS ARE NOW REVEALED
     </div>
     ${rows.length ? rows.map(x=>`
       <div class="listrow">
-        <b>${esc(x.player_name||"Player")}</b><br>
+        <b>${esc(x.player_name)}</b><br>
         Game 1: <strong>${x.game1_home_score}–${x.game1_away_score}</strong>
         &nbsp; | &nbsp;
         Game 2: <strong>${x.game2_home_score}–${x.game2_away_score}</strong>
       </div>`).join("") : '<div class="small">No other players have submitted yet.</div>'}`;
 
+  // Make the reveal immediately visible on a phone after submission.
   setTimeout(()=>$("othersCard").scrollIntoView({behavior:"smooth",block:"start"}),100);
 }
 async function loadWinner(){
@@ -475,14 +436,12 @@ $("unlockBtn").addEventListener("click",()=>{
   if(wheelGames.length>=2){$("spinBtn1").disabled=spinCount!==0;$("spinStatus").textContent=spinCount===0?"Ready — spin Game 1":"Game already started"}
 });
 $("gamePin").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,4)});
-$("newPin").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,4)});
-$("existingPin").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,4)});
-$("newPlayerBtn").addEventListener("click",showNewPlayerForm);
-$("existingPlayerBtn").addEventListener("click",showExistingPlayerForm);
-$("createPlayerBtn").addEventListener("click",createNewPlayer);
-$("loginPlayerBtn").addEventListener("click",loginExistingPlayer);
+$("pin").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,4)});
 $("spinBtn1").addEventListener("click",()=>spinWheel(1));
 $("spinBtn2").addEventListener("click",()=>spinWheel(2));
+$("newPlayerBtn").addEventListener("click",()=>choosePlayerMode("new"));
+$("existingPlayerBtn").addEventListener("click",()=>choosePlayerMode("existing"));
+$("continueBtn").addEventListener("click",continuePlayer);
 $("submitBtn").addEventListener("click",submit);
 $("newWeekBtn").addEventListener("click",()=>location.reload());
 window.addEventListener("resize",()=>{if(wheelGames.length)drawWheel()});
