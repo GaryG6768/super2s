@@ -76,9 +76,9 @@ input{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:10px;font-s
 </div>
 
 <div class="card">
-  <h2>🎡 This week's games</h2>
+  <h2>🎡 This week's possible games</h2>
   <div id="games"><div class="msg">Loading fixtures…</div></div>
-  <div class="small">Games are selected centrally. Both kick-offs must be at least 2 hours apart and fixtures must be Friday–Monday.</div>
+  <div class="small">These are all 10 possible fixtures. The two SUPER 2s games are kept secret until the wheel is spun.</div>
 </div>
 
 <div class="card accessCard" id="accessCard">
@@ -219,7 +219,21 @@ function spinWheel(which){
     $("selectedGame").innerHTML+=`<div style="margin:8px 0"><strong>Game ${which}: ${esc(picked.home)} v ${esc(picked.away)}</strong><small>${dateLabel(picked.kick)}</small></div>`;
     $("selectedGame").classList.remove("hidden");drawWheel();
     if(spinCount===1){$("spinBtn2").disabled=false;$("spinBtn2").classList.add("ready");$("spinStatus").textContent="Game 1 selected — now spin Game 2";}
-    else{$("spinBtn1").disabled=true;$("spinBtn2").disabled=true;$("spinBtn2").classList.remove("ready");$("spinBtn2").textContent="BOTH GAMES SELECTED ✓";$("spinStatus").textContent="Both SUPER 2s games revealed";}
+    else{
+      $("spinBtn1").disabled=true;
+      $("spinBtn2").disabled=true;
+      $("spinBtn2").classList.remove("ready");
+      $("spinBtn2").textContent="BOTH GAMES SELECTED ✓";
+      $("spinStatus").textContent="Both SUPER 2s games revealed";
+      // If a player has already chosen NEW/EXISTING PLAYER, only now show
+      // the prediction form. This prevents the central choices being exposed
+      // through the prediction screen before the wheel is spun.
+      if(playerId){
+        renderPredictionForm();
+        $("predForm").classList.remove("hidden");
+        $("message").innerHTML='<div class="msg">🎯 Both games revealed. Enter your two exact-score predictions.</div>';
+      }
+    }
   },5500);
 }
 
@@ -282,7 +296,10 @@ async function loadWeek(){
 }
 
 function renderGames(){
-  $("games").innerHTML=currentGames.map(g=>`<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div></div>`).join("");
+  // IMPORTANT: currentGames contains the two centrally selected games.
+  // Never render currentGames here because that would reveal the result
+  // before each player spins the wheel.
+  $("games").innerHTML=wheelGames.map(g=>`<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div></div>`).join("");
 }
 function renderPredictionForm(){
   $("predGames").innerHTML=currentGames.map(g=>`<div class="game"><b>${esc(g.home)} v ${esc(g.away)}</b><div class="kick">${dateLabel(g.kick)}</div><label>Score</label><div class="score"><input id="g${g.n}h" inputmode="numeric" type="number" min="0" max="99" placeholder="Home"><input id="g${g.n}a" inputmode="numeric" type="number" min="0" max="99" placeholder="Away"></div></div>`).join("");
@@ -312,10 +329,16 @@ async function finishPlayer(id,name){
     await showOthers();
     return;
   }
-  renderPredictionForm();
-  $("predForm").classList.remove("hidden");
   $("newPlayerForm").classList.add("hidden");
   $("existingPlayerForm").classList.add("hidden");
+  if(spinCount===2){
+    renderPredictionForm();
+    $("predForm").classList.remove("hidden");
+    $("message").innerHTML='<div class="msg">🎯 Both games have now been revealed. Enter your two exact-score predictions.</div>';
+  }else{
+    $("predForm").classList.add("hidden");
+    $("message").innerHTML='<div class="msg">✅ Player ready. Spin both games first; your prediction form will appear only after Game 2 is revealed.</div>';
+  }
   $("newPlayerBtn").classList.add("hidden");
   $("existingPlayerBtn").classList.add("hidden");
 }
