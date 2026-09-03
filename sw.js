@@ -1,4 +1,4 @@
-const CACHE = "super2s-v1";
+const CACHE = "super2s-v2";
 const APP_SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", event => {
