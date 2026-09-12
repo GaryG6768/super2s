@@ -41,11 +41,11 @@ jobs:
               req=Request(
                   URL+'/rest/v1/rpc/'+name,
                   data=body,
-                  headers={
-                      'Content-Type':'application/json',
-                      'apikey':SECRET,
-                      'Authorization':'Bearer '+SECRET
-                  }
+                headers={
+    'Content-Type':'application/json',
+    'apikey':SECRET
+}
+                  
               )
               with urlopen(req, timeout=30) as r:
                   raw=r.read().decode()
