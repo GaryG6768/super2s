@@ -45,21 +45,35 @@ jobs:
 
 
           def rpc(name, args):
-              body = json.dumps(args).encode()
+    body=json.dumps(args).encode()
 
-              req = Request(
-                  URL + '/rest/v1/rpc/' + name,
-                  data=body,
-                  headers={
-                      'Content-Type':'application/json',
-                      'apikey':SECRET,
-                      'Authorization':'Bearer ' + SECRET
-                  }
-              )
+    req=Request(
+        URL+'/rest/v1/rpc/'+name,
+        data=body,
+        headers={
+            'Content-Type':'application/json',
+            'apikey':SECRET,
+            'Authorization':'Bearer '+SECRET
+        }
+    )
 
-              with urlopen(req, timeout=30) as r:
-                  raw = r.read().decode()
-                  return json.loads(raw) if raw else None
+    try:
+        with urlopen(req, timeout=30) as r:
+            raw=r.read().decode()
+            return json.loads(raw) if raw else None
+
+    except Exception as e:
+        # Show the actual Supabase response instead of only HTTP 400.
+        print('RPC ERROR:', name)
+
+        if hasattr(e, 'read'):
+            try:
+                error_body=e.read().decode()
+                print('SUPABASE ERROR:', error_body)
+            except Exception:
+                pass
+
+        raise
 
 
           # ============================================================
