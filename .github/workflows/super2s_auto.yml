@@ -11,167 +11,342 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
+
     steps:
       - name: Run SUPER 2s automation
+
         env:
           SUPABASE_URL: 'https://hwgxfgmmupnxhtviuqks.supabase.co'
           SUPABASE_SECRET: ${{ secrets.SUPER2S_SUPABASE_SECRET }}
+
         run: |
+
           python - <<'PY'
-          import os, json, random
+
+          import os
+          import json
+          import random
+
           from datetime import datetime, timedelta
           from zoneinfo import ZoneInfo
           from urllib.request import Request, urlopen
 
+
           UK = ZoneInfo('Europe/London')
           NOW = datetime.now(UK)
+
           URL = os.environ['SUPABASE_URL']
-          SECRET = os.environ.get('SUPABASE_SECRET','')
+          SECRET = os.environ.get('SUPABASE_SECRET', '')
+
 
           if not SECRET:
-              raise SystemExit('Missing GitHub secret SUPER2S_SUPABASE_SECRET')
+              raise SystemExit(
+                  'Missing GitHub secret SUPER2S_SUPABASE_SECRET'
+              )
+
+
+          # ---------------------------------------------------------
+          # GET JSON
+          # ---------------------------------------------------------
 
           def get_json(url):
-              req=Request(url, headers={'User-Agent':'SUPER2s/1.0'})
+
+              req = Request(
+                  url,
+                  headers={
+                      'User-Agent': 'SUPER2s/1.0'
+                  }
+              )
+
               with urlopen(req, timeout=30) as r:
-                  return json.loads(r.read().decode())
+                  return json.loads(
+                      r.read().decode()
+                  )
+
+
+          # ---------------------------------------------------------
+          # SUPABASE RPC
+          #
+          # IMPORTANT:
+          # New Supabase secret keys must NOT be sent as
+          # Authorization: Bearer.
+          # They are sent through apikey only.
+          # ---------------------------------------------------------
 
           def rpc(name, args):
-              body=json.dumps(args).encode()
-              req=Request(
-                  URL+'/rest/v1/rpc/'+name,
-                  data=body,
-                headers={
-    'Content-Type':'application/json',
-    'apikey':SECRET
-}
-                  
-              )
-              with urlopen(req, timeout=30) as r:
-                  raw=r.read().decode()
-                  return json.loads(raw) if raw else None
 
-          # Tuesday 08:00 UK:
-          # Select the two games for the coming Friday-Monday window.
+              body = json.dumps(args).encode()
+
+              req = Request(
+                  URL + '/rest/v1/rpc/' + name,
+                  data=body,
+                  headers={
+                      'Content-Type': 'application/json',
+                      'apikey': SECRET
+                  }
+              )
+
+              with urlopen(req, timeout=30) as r:
+
+                  raw = r.read().decode()
+
+                  return (
+                      json.loads(raw)
+                      if raw
+                      else None
+                  )
+
+
+          # =========================================================
+          # CREATE THE COMING WEEK'S FIXTURES
+          #
+          # Tuesday 08:00 UK
+          # Select two games for the coming Friday-Monday window.
+          # =========================================================
+
           if NOW.weekday() == 1 and NOW.hour == 8:
 
-              days_until_friday=(4-NOW.weekday()) % 7
-              friday=(NOW+timedelta(days=days_until_friday)).date()
-              monday=friday+timedelta(days=3)
+              days_until_friday = (
+                  4 - NOW.weekday()
+              ) % 7
 
-              start=datetime.combine(
+              friday = (
+                  NOW + timedelta(
+                      days=days_until_friday
+                  )
+              ).date()
+
+              monday = friday + timedelta(days=3)
+
+
+              start = datetime.combine(
                   friday,
                   datetime.min.time(),
                   UK
               )
 
-              end=datetime.combine(
-                  monday+timedelta(days=1),
+              end = datetime.combine(
+                  monday + timedelta(days=1),
                   datetime.min.time(),
                   UK
               )
 
-              events=[]
-              day=start.date()
+
+              events = []
+
+              day = start.date()
+
 
               while day < end.date():
 
-                  d=day.strftime('%Y%m%d')
+                  d = day.strftime('%Y%m%d')
 
-                  data=get_json(
-                      f'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates={d}'
+
+                  data = get_json(
+                      'https://site.api.espn.com/apis/site/v2/'
+                      'sports/soccer/eng.1/scoreboard'
+                      '?dates=' + d
                   )
 
-                  for e in data.get('events',[]):
 
-                      c=e.get('competitions',[{}])[0]
-                      ts=e.get('date') or c.get('date')
+                  for e in data.get('events', []):
+
+                      c = e.get(
+                          'competitions',
+                          [{}]
+                      )[0]
+
+
+                      ts = (
+                          e.get('date')
+                          or c.get('date')
+                      )
+
 
                       if not ts:
                           continue
 
-                      dt=datetime.fromisoformat(
-                          ts.replace('Z','+00:00')
+
+                      dt = datetime.fromisoformat(
+                          ts.replace(
+                              'Z',
+                              '+00:00'
+                          )
                       ).astimezone(UK)
 
-                      if dt.weekday() not in (4,5,6,0):
+
+                      if dt.weekday() not in (
+                          4,
+                          5,
+                          6,
+                          0
+                      ):
                           continue
 
-                      teams=c.get('competitors',[])
 
-                      if len(teams)!=2:
+                      teams = c.get(
+                          'competitors',
+                          []
+                      )
+
+
+                      if len(teams) != 2:
                           continue
 
-                      home=next(
-                          (x for x in teams if x.get('homeAway')=='home'),
+
+                      home = next(
+                          (
+                              x for x in teams
+                              if x.get('homeAway') == 'home'
+                          ),
                           teams[0]
                       )
 
-                      away=next(
-                          (x for x in teams if x.get('homeAway')=='away'),
+
+                      away = next(
+                          (
+                              x for x in teams
+                              if x.get('homeAway') == 'away'
+                          ),
                           teams[1]
                       )
 
+
                       events.append({
-                          'id':e.get('id'),
-                          'home':home.get('team',{}).get('displayName'),
-                          'away':away.get('team',{}).get('displayName'),
-                          'kick':dt
+
+                          'id': e.get('id'),
+
+                          'home':
+                              home.get(
+                                  'team',
+                                  {}
+                              ).get(
+                                  'displayName'
+                              ),
+
+                          'away':
+                              away.get(
+                                  'team',
+                                  {}
+                              ).get(
+                                  'displayName'
+                              ),
+
+                          'kick': dt
                       })
 
-                  day+=timedelta(days=1)
 
-              events=[
+                  day += timedelta(days=1)
+
+
+              events = [
                   e for e in events
                   if e['home'] and e['away']
               ]
 
-              events.sort(key=lambda x:x['kick'])
 
-              pairs=[]
+              events.sort(
+                  key=lambda x: x['kick']
+              )
 
-              for i,a in enumerate(events):
-                  for b in events[i+1:]:
+
+              pairs = []
+
+
+              for i, a in enumerate(events):
+
+                  for b in events[i + 1:]:
+
                       if abs(
-                          (b['kick']-a['kick']).total_seconds()
+                          (
+                              b['kick']
+                              - a['kick']
+                          ).total_seconds()
                       ) >= 7200:
-                          pairs.append((a,b))
+
+                          pairs.append(
+                              (a, b)
+                          )
+
 
               if not pairs:
+
                   raise SystemExit(
-                      'No suitable Friday-Monday pair with 2-hour gap was found.'
+                      'No suitable Friday-Monday pair '
+                      'with 2-hour gap was found.'
                   )
 
-              a,b=random.choice(pairs)
 
-              week_start=friday.isoformat()
+              a, b = random.choice(pairs)
 
-              payload={
-                  'week_start':week_start,
-                  'game1_home':a['home'],
-                  'game1_away':a['away'],
-                  'game1_kickoff':a['kick'].isoformat(),
-                  'game2_home':b['home'],
-                  'game2_away':b['away'],
-                  'game2_kickoff':b['kick'].isoformat()
+
+              week_start = friday.isoformat()
+
+
+              payload = {
+
+                  'week_start':
+                      week_start,
+
+                  'game1_home':
+                      a['home'],
+
+                  'game1_away':
+                      a['away'],
+
+                  'game1_kickoff':
+                      a['kick'].isoformat(),
+
+                  'game2_home':
+                      b['home'],
+
+                  'game2_away':
+                      b['away'],
+
+                  'game2_kickoff':
+                      b['kick'].isoformat()
               }
 
-              body=json.dumps(payload).encode()
 
-              req=Request(
-                  URL+'/rest/v1/weeks?on_conflict=week_start',
+              body = json.dumps(
+                  payload
+              ).encode()
+
+
+              req = Request(
+
+                  URL +
+                  '/rest/v1/weeks'
+                  '?on_conflict=week_start',
+
                   data=body,
+
                   method='POST',
+
                   headers={
-                      'Content-Type':'application/json',
-                      'apikey':SECRET,
-                      'Authorization':'Bearer '+SECRET,
-                      'Prefer':'resolution=merge-duplicates'
+
+                      'Content-Type':
+                          'application/json',
+
+                      'apikey':
+                          SECRET,
+
+                      'Prefer':
+                          'resolution=merge-duplicates'
                   }
               )
 
-              with urlopen(req,timeout=30) as r:
-                  print('Weekly games saved:',r.status)
+
+              with urlopen(
+                  req,
+                  timeout=30
+              ) as r:
+
+                  print(
+                      'Weekly games saved:',
+                      r.status
+                  )
+
 
               print(
                   a['home'],
@@ -180,6 +355,7 @@ jobs:
                   a['kick'].isoformat()
               )
 
+
               print(
                   b['home'],
                   'v',
@@ -187,185 +363,359 @@ jobs:
                   b['kick'].isoformat()
               )
 
-          # Every 30 minutes:
-          # Update stored scores for the current week's games.
 
-          req=Request(
-              URL+'/rest/v1/weeks?select=*&order=week_start.desc&limit=1',
+          # =========================================================
+          # GET CURRENT WEEK
+          # =========================================================
+
+          req = Request(
+
+              URL +
+              '/rest/v1/weeks'
+              '?select=*'
+              '&order=week_start.desc'
+              '&limit=1',
+
               headers={
-                  'apikey':SECRET,
-                  'Authorization':'Bearer '+SECRET
+
+                  'apikey':
+                      SECRET
               }
           )
 
-          with urlopen(req,timeout=30) as r:
-              rows=json.loads(r.read().decode())
+
+          with urlopen(
+              req,
+              timeout=30
+          ) as r:
+
+              rows = json.loads(
+                  r.read().decode()
+              )
+
 
           if not rows:
-              raise SystemExit('No SUPER 2s week exists yet.')
 
-          w=rows[0]
+              raise SystemExit(
+                  'No SUPER 2s week exists yet.'
+              )
 
-          games=[]
 
-          for home,away,kick,num in [
+          w = rows[0]
+
+
+          # =========================================================
+          # CHECK THE TWO SELECTED GAMES
+          # =========================================================
+
+          games = []
+
+
+          for home, away, kick, num in [
+
               (
                   w['game1_home'],
                   w['game1_away'],
                   w['game1_kickoff'],
                   1
               ),
+
               (
                   w['game2_home'],
                   w['game2_away'],
                   w['game2_kickoff'],
                   2
               )
+
           ]:
 
-              target=datetime.fromisoformat(
-                  kick.replace('Z','+00:00')
+
+              target = datetime.fromisoformat(
+
+                  kick.replace(
+                      'Z',
+                      '+00:00'
+                  )
+
               ).astimezone(UK)
+
 
               if target > NOW:
                   continue
 
-              d=target.strftime('%Y%m%d')
 
-              data=get_json(
-                  f'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates={d}'
+              d = target.strftime(
+                  '%Y%m%d'
               )
 
-              found=None
 
-              for e in data.get('events',[]):
+              data = get_json(
 
-                  c=e.get('competitions',[{}])[0]
-                  teams=c.get('competitors',[])
+                  'https://site.api.espn.com/apis/site/v2/'
+                  'sports/soccer/eng.1/scoreboard'
+                  '?dates=' + d
+              )
 
-                  names=[
-                      x.get('team',{}).get('displayName')
+
+              found = None
+
+
+              for e in data.get(
+                  'events',
+                  []
+              ):
+
+
+                  c = e.get(
+                      'competitions',
+                      [{}]
+                  )[0]
+
+
+                  teams = c.get(
+                      'competitors',
+                      []
+                  )
+
+
+                  names = [
+
+                      x.get(
+                          'team',
+                          {}
+                      ).get(
+                          'displayName'
+                      )
+
                       for x in teams
                   ]
 
-                  if home in names and away in names:
 
-                      status=c.get(
-                          'status',{}
+                  if (
+                      home in names
+                      and
+                      away in names
+                  ):
+
+
+                      status = c.get(
+                          'status',
+                          {}
                       ).get(
-                          'type',{}
+                          'type',
+                          {}
                       )
 
-                      if status.get('completed'):
 
-                          hs=next(
+                      if status.get(
+                          'completed'
+                      ):
+
+
+                          hs = next(
+
                               x for x in teams
-                              if x.get('team',{}).get('displayName')==home
-                          ).get('score')
 
-                          aas=next(
+                              if x.get(
+                                  'team',
+                                  {}
+                              ).get(
+                                  'displayName'
+                              ) == home
+
+                          ).get(
+                              'score'
+                          )
+
+
+                          aas = next(
+
                               x for x in teams
-                              if x.get('team',{}).get('displayName')==away
-                          ).get('score')
 
-                          found=(int(hs),int(aas))
+                              if x.get(
+                                  'team',
+                                  {}
+                              ).get(
+                                  'displayName'
+                              ) == away
+
+                          ).get(
+                              'score'
+                          )
+
+
+                          found = (
+                              int(hs),
+                              int(aas)
+                          )
+
                           break
 
-              games.append((num,found))
 
-          updates={}
+              games.append(
+                  (num, found)
+              )
 
-          for num,score in games:
+
+          # =========================================================
+          # SAVE ANY COMPLETED SCORES
+          # =========================================================
+
+          updates = {}
+
+
+          for num, score in games:
 
               if score:
 
                   updates[
-                      'game%d_score_home'%num
-                  ]=score[0]
+                      'game%d_score_home' % num
+                  ] = score[0]
 
                   updates[
-                      'game%d_score_away'%num
-                  ]=score[1]
+                      'game%d_score_away' % num
+                  ] = score[1]
+
 
           if updates:
 
-              # Do not let this script decide whether the round is finished.
-              # The database settlement function does that.
+              # The DATABASE decides whether the round is finished.
+              # Do not let this script decide.
 
-              updates['status']='open'
+              updates['status'] = 'open'
 
-              body=json.dumps(updates).encode()
 
-              req=Request(
-                  URL+'/rest/v1/weeks?id=eq.'+w['id'],
+              body = json.dumps(
+                  updates
+              ).encode()
+
+
+              req = Request(
+
+                  URL +
+                  '/rest/v1/weeks'
+                  '?id=eq.' +
+                  w['id'],
+
                   data=body,
+
                   method='PATCH',
+
                   headers={
-                      'Content-Type':'application/json',
-                      'apikey':SECRET,
-                      'Authorization':'Bearer '+SECRET,
-                      'Prefer':'return=minimal'
+
+                      'Content-Type':
+                          'application/json',
+
+                      'apikey':
+                          SECRET,
+
+                      'Prefer':
+                          'return=minimal'
                   }
               )
 
-              with urlopen(req,timeout=30) as r:
+
+              with urlopen(
+                  req,
+                  timeout=30
+              ) as r:
+
                   print(
                       'Scores updated:',
                       r.status,
                       updates
                   )
 
+
           else:
 
-              print('No completed score changes found.')
+              print(
+                  'No completed score changes found.'
+              )
 
-          # Re-read the week after saving scores.
 
-          req=Request(
-              URL+'/rest/v1/weeks?id=eq.'+w['id']+'&select=*',
+          # =========================================================
+          # RE-READ CURRENT WEEK AFTER SCORE UPDATE
+          # =========================================================
+
+          req = Request(
+
+              URL +
+              '/rest/v1/weeks'
+              '?id=eq.' +
+              w['id'] +
+              '&select=*',
+
               headers={
-                  'apikey':SECRET,
-                  'Authorization':'Bearer '+SECRET
+
+                  'apikey':
+                      SECRET
               }
           )
 
-          with urlopen(req,timeout=30) as r:
-              latest=json.loads(r.read().decode())
+
+          with urlopen(
+              req,
+              timeout=30
+          ) as r:
+
+              latest = json.loads(
+                  r.read().decode()
+              )
+
 
           if latest:
 
-              current=latest[0]
+              current = latest[0]
 
-              # Ask the database to decide whether the round has ended.
+
+              # =====================================================
+              # SETTLEMENT CHECK
               #
-              # Game 1 finished + survivors:
-              #     keep round open.
+              # GAME 1 FINISHED + SURVIVORS
+              #       = KEEP ROUND OPEN
               #
-              # Game 1 finished + no survivors:
-              #     finish immediately and open next round.
+              # GAME 1 FINISHED + NO SURVIVORS
+              #       = FINISH IMMEDIATELY
               #
-              # Both games finished:
-              #     determine winner or carry the pot forward.
+              # BOTH GAMES FINISHED
+              #       = WINNER OR POT CARRIES FORWARD
+              # =====================================================
 
               if (
-                  current.get('game1_score_home') is not None
+
+                  current.get(
+                      'game1_score_home'
+                  ) is not None
+
                   and
-                  current.get('game1_score_away') is not None
+
+                  current.get(
+                      'game1_score_away'
+                  ) is not None
+
               ):
+
 
                   try:
 
-                      result=rpc(
+                      result = rpc(
+
                           'settle_week_and_activate_next',
+
                           {
-                              'p_week_id':current['id']
+                              'p_week_id':
+                                  current['id']
                           }
+
                       )
+
 
                       print(
                           'Settlement checked:',
                           result
                       )
+
 
                   except Exception as e:
 
@@ -374,8 +724,12 @@ jobs:
                           e
                       )
 
+
           else:
 
-              print('No week found after score update.')
+              print(
+                  'No week found after score update.'
+              )
+
 
           PY
