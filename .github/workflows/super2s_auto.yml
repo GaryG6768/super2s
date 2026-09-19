@@ -76,7 +76,6 @@ jobs:
                   for event in data.get('events', []):
                       competition = event.get('competitions', [{}])[0]
                       timestamp = event.get('date') or competition.get('date')
-
                       if not timestamp:
                           continue
 
@@ -88,7 +87,6 @@ jobs:
                           continue
 
                       teams = competition.get('competitors', [])
-
                       if len(teams) != 2:
                           continue
 
@@ -96,7 +94,6 @@ jobs:
                           (t for t in teams if t.get('homeAway') == 'home'),
                           teams[0]
                       )
-
                       away = next(
                           (t for t in teams if t.get('homeAway') == 'away'),
                           teams[1]
@@ -168,7 +165,6 @@ jobs:
               )
 
           # TUESDAY 08:00 - CREATE THE WEEK IF IT DOES NOT EXIST
-
           if NOW.weekday() == 1 and NOW.hour == 8:
               days_until_friday = (4 - NOW.weekday()) % 7
               friday = (NOW + timedelta(days=days_until_friday)).date()
@@ -191,7 +187,6 @@ jobs:
                   create_scheduled_week(friday, open_now=False)
 
           # GET LATEST WEEK
-
           weeks = supabase(
               'GET',
               '/rest/v1/weeks'
@@ -206,7 +201,6 @@ jobs:
           week = weeks[0]
 
           # CHECK BOTH GAMES
-
           games = []
 
           for home, away, kickoff, number in [
@@ -241,7 +235,6 @@ jobs:
               for event in data.get('events', []):
                   competition = event.get('competitions', [{}])[0]
                   teams = competition.get('competitors', [])
-
                   names = [
                       team.get('team', {}).get('displayName')
                       for team in teams
@@ -249,29 +242,24 @@ jobs:
 
                   if home in names and away in names:
                       status = competition.get('status', {}).get('type', {})
-
                       if status.get('completed'):
                           home_team = next(
                               t for t in teams
                               if t.get('team', {}).get('displayName') == home
                           )
-
                           away_team = next(
                               t for t in teams
                               if t.get('team', {}).get('displayName') == away
                           )
-
                           found = (
                               int(home_team.get('score')),
                               int(away_team.get('score'))
                           )
-
                           break
 
               games.append((number, found))
 
           # SAVE COMPLETED SCORES
-
           updates = {}
 
           for number, score in games:
@@ -280,7 +268,11 @@ jobs:
                   updates['game%d_score_away' % number] = score[1]
 
           if updates:
-              updates['status'] = 'open'
+              # Never reopen a round that has already been settled.
+              # The score can still be updated, but a finished round
+              # must remain finished so the next round can be created.
+              if week.get('status') != 'finished':
+                  updates['status'] = 'open'
 
               supabase(
                   'PATCH',
@@ -290,12 +282,10 @@ jobs:
               )
 
               print('Scores updated:', updates)
-
           else:
               print('No completed score changes found.')
 
           # RE-READ CURRENT WEEK
-
           current_path = (
               '/rest/v1/weeks'
               '?id=eq.' + week['id']
@@ -318,19 +308,15 @@ jobs:
           )
 
           # SETTLE
-
           if game1_finished and current.get('status') == 'open':
               try:
                   result = rpc(
                       'settle_week_and_activate_next',
                       {'p_week_id': current['id']}
                   )
-
                   print('Settlement checked:', result)
-
               except Exception as error:
                   print('Settlement check failed:', error)
-
           else:
               print(
                   'Settlement not required:',
@@ -338,9 +324,8 @@ jobs:
                   '| status =', current.get('status')
               )
 
-          # IF THE ROUND FINISHED AND THERE IS NO FUTURE
-          # SCHEDULED WEEK, CREATE AND OPEN THE NEXT ROUND NOW.
-
+          # IF THE ROUND FINISHED AND THERE IS NO FUTURE SCHEDULED
+          # WEEK, CREATE AND OPEN THE NEXT ROUND NOW.
           settled_path = (
               '/rest/v1/weeks'
               '?id=eq.' + current['id']
@@ -353,7 +338,6 @@ jobs:
           )
 
           if settled_rows and settled_rows[0].get('status') == 'finished':
-
               current_start = date.fromisoformat(
                   settled_rows[0]['week_start']
               )
@@ -373,7 +357,6 @@ jobs:
               )
 
               if future:
-
                   print(
                       'Future scheduled week already exists:',
                       future[0]['week_start']
@@ -381,27 +364,18 @@ jobs:
 
                   # The settlement function normally opens this week.
                   # If it did not, open it here.
-
                   supabase(
                       'PATCH',
                       '/rest/v1/weeks?id=eq.' + future[0]['id'],
                       {'status': 'open'},
                       'return=minimal'
                   )
-
               else:
-
-                  days_ahead = (
-                      4 - current_start.weekday()
-                  ) % 7
-
+                  days_ahead = (4 - current_start.weekday()) % 7
                   if days_ahead == 0:
                       days_ahead = 7
 
-                  next_friday = (
-                      current_start
-                      + timedelta(days=days_ahead)
-                  )
+                  next_friday = current_start + timedelta(days=days_ahead)
 
                   print(
                       'No future scheduled week found. Creating and opening:',
@@ -412,5 +386,4 @@ jobs:
                       next_friday,
                       open_now=True
                   )
-
           PY
