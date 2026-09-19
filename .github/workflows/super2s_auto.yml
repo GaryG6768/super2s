@@ -218,18 +218,67 @@ jobs:
               return random.choice(pairs)
 
 
-          def create_scheduled_week(
-    friday,
-    open_now=False,
-    fixture_pair=None
-):
+                    def create_scheduled_week(
+              friday,
+              open_now=False,
+              fixture_pair=None
+          ):
 
-    if fixture_pair is None:
-        game1, game2 = get_fixture_pair(friday)
-    else:
-        game1, game2 = fixture_pair
+              if fixture_pair is None:
+                  game1, game2 = get_fixture_pair(friday)
+              else:
+                  game1, game2 = fixture_pair
 
               payload = {
+                  'week_start': friday.isoformat(),
+
+                  'game1_home': game1['home'],
+                  'game1_away': game1['away'],
+                  'game1_kickoff':
+                      game1['kick'].isoformat(),
+
+                  'game2_home': game2['home'],
+                  'game2_away': game2['away'],
+                  'game2_kickoff':
+                      game2['kick'].isoformat()
+              }
+
+              supabase(
+                  'POST',
+                  '/rest/v1/weeks?on_conflict=week_start',
+                  payload,
+                  'resolution=ignore-duplicates,return=minimal'
+              )
+
+              if open_now:
+
+                  supabase(
+                      'PATCH',
+                      '/rest/v1/weeks'
+                      '?week_start=eq.'
+                      + friday.isoformat(),
+                      {
+                          'status': 'open'
+                      },
+                      'return=minimal'
+                  )
+
+              print(
+                  'Week ready:',
+                  friday.isoformat(),
+                  '|',
+                  game1['home'],
+                  'v',
+                  game1['away'],
+                  '|',
+                  game2['home'],
+                  'v',
+                  game2['away'],
+                  '| open =',
+                  open_now
+              )
+    open_now=False,
+
                   'week_start': friday.isoformat(),
 
                   'game1_home': game1['home'],
