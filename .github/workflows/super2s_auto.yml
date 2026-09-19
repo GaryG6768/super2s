@@ -11,192 +11,102 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
-
     steps:
       - name: Run SUPER 2s automation
         env:
           SUPABASE_URL: 'https://hwgxfgmmupnxhtviuqks.supabase.co'
           SUPABASE_SECRET: ${{ secrets.SUPER2S_SUPABASE_SECRET }}
-
         run: |
           python - <<'PY'
-          import os
-          import json
-          import random
-          import time
-          from datetime import datetime, timedelta
+          import os, json, random, time
+          from datetime import datetime, timedelta, date
           from zoneinfo import ZoneInfo
           from urllib.request import Request, urlopen
 
           UK = ZoneInfo('Europe/London')
           NOW = datetime.now(UK)
-
           URL = os.environ['SUPABASE_URL']
           SECRET = os.environ.get('SUPABASE_SECRET', '')
 
           if not SECRET:
-              raise SystemExit(
-                  'Missing GitHub secret SUPER2S_SUPABASE_SECRET'
-              )
-
-          # ---------------------------------------------------------
-          # ESPN DATA
-          # ---------------------------------------------------------
+              raise SystemExit('Missing GitHub secret SUPER2S_SUPABASE_SECRET')
 
           def get_json(url):
-
               last_error = None
-
               for attempt in range(3):
-
                   try:
-
-                      # Do not send a custom User-Agent.
-                      # ESPN has been returning HTTP 403 to GitHub
-                      # Actions requests carrying the old custom header.
-                      req = Request(url)
-
-                      with urlopen(req, timeout=30) as response:
-                          return json.loads(
-                              response.read().decode()
-                          )
-
+                      with urlopen(Request(url), timeout=30) as response:
+                          return json.loads(response.read().decode())
                   except Exception as error:
-
                       last_error = error
-
                       if attempt < 2:
                           time.sleep(2)
-
               raise last_error
 
-
-          # ---------------------------------------------------------
-          # SUPABASE RPC
-          # ---------------------------------------------------------
-
-          def rpc(name, args):
-
-              body = json.dumps(args).encode()
-
-              req = Request(
-                  URL + '/rest/v1/rpc/' + name,
-                  data=body,
-                  method='POST',
-                  headers={
-                      'Content-Type': 'application/json',
-                      'apikey': SECRET,
-                      'Authorization': 'Bearer ' + SECRET
-                  }
-              )
-
+          def supabase(method, path, payload=None, prefer=None):
+              data = json.dumps(payload).encode() if payload is not None else None
+              headers = {
+                  'apikey': SECRET,
+                  'Authorization': 'Bearer ' + SECRET
+              }
+              if payload is not None:
+                  headers['Content-Type'] = 'application/json'
+              if prefer:
+                  headers['Prefer'] = prefer
+              req = Request(URL + path, data=data, method=method, headers=headers)
               with urlopen(req, timeout=30) as response:
-
                   raw = response.read().decode()
-
                   return json.loads(raw) if raw else None
 
+          def rpc(name, args):
+              return supabase('POST', '/rest/v1/rpc/' + name, args)
 
-          # ---------------------------------------------------------
-          # TUESDAY 08:00 UK
-          # SELECT TWO GAMES FOR THE NEW WEEK
-          # ---------------------------------------------------------
-
-          if NOW.weekday() == 1 and NOW.hour == 8:
-
-              days_until_friday = (
-                  4 - NOW.weekday()
-              ) % 7
-
-              friday = (
-                  NOW + timedelta(
-                      days=days_until_friday
-                  )
-              ).date()
-
+          def get_fixture_pair(friday):
               monday = friday + timedelta(days=3)
-
               events = []
-
               day = friday
 
               while day <= monday:
-
-                  date_string = day.strftime('%Y%m%d')
-
                   data = get_json(
                       'https://site.api.espn.com/apis/site/v2/'
                       'sports/soccer/eng.1/scoreboard'
-                      '?dates=' + date_string
+                      '?dates=' + day.strftime('%Y%m%d')
                   )
 
                   for event in data.get('events', []):
-
-                      competition = event.get(
-                          'competitions',
-                          [{}]
-                      )[0]
-
-                      timestamp = (
-                          event.get('date')
-                          or competition.get('date')
-                      )
+                      competition = event.get('competitions', [{}])[0]
+                      timestamp = event.get('date') or competition.get('date')
 
                       if not timestamp:
                           continue
 
                       kickoff = datetime.fromisoformat(
-                          timestamp.replace(
-                              'Z',
-                              '+00:00'
-                          )
+                          timestamp.replace('Z', '+00:00')
                       ).astimezone(UK)
 
-                      if kickoff.weekday() not in (
-                          4, 5, 6, 0
-                      ):
+                      if kickoff.weekday() not in (4, 5, 6, 0):
                           continue
 
-                      teams = competition.get(
-                          'competitors',
-                          []
-                      )
+                      teams = competition.get('competitors', [])
 
                       if len(teams) != 2:
                           continue
 
                       home = next(
-                          (
-                              team
-                              for team in teams
-                              if team.get('homeAway') == 'home'
-                          ),
+                          (t for t in teams if t.get('homeAway') == 'home'),
                           teams[0]
                       )
 
                       away = next(
-                          (
-                              team
-                              for team in teams
-                              if team.get('homeAway') == 'away'
-                          ),
+                          (t for t in teams if t.get('homeAway') == 'away'),
                           teams[1]
                       )
 
-                      home_name = home.get(
-                          'team',
-                          {}
-                      ).get('displayName')
-
-                      away_name = away.get(
-                          'team',
-                          {}
-                      ).get('displayName')
+                      home_name = home.get('team', {}).get('displayName')
+                      away_name = away.get('team', {}).get('displayName')
 
                       if home_name and away_name:
-
                           events.append({
-                              'id': event.get('id'),
                               'home': home_name,
                               'away': away_name,
                               'kick': kickoff
@@ -204,141 +114,109 @@ jobs:
 
                   day += timedelta(days=1)
 
-
-              events.sort(
-                  key=lambda event: event['kick']
-              )
-
-
-              # Make all possible pairs where the games
-              # are at least two hours apart.
+              events.sort(key=lambda x: x['kick'])
 
               pairs = []
 
               for i, first in enumerate(events):
-
                   for second in events[i + 1:]:
-
-                      gap = (
-                          second['kick']
-                          - first['kick']
-                      ).total_seconds()
-
-                      if gap >= 7200:
-
-                          pairs.append(
-                              (first, second)
-                          )
-
+                      if (second['kick'] - first['kick']).total_seconds() >= 7200:
+                          pairs.append((first, second))
 
               if not pairs:
-
                   raise SystemExit(
-                      'No suitable Friday-Monday pair '
-                      'with 2-hour gap was found.'
+                      'No suitable Friday-Monday pair with a 2-hour gap was found.'
                   )
 
+              return random.choice(pairs)
 
-              game1, game2 = random.choice(pairs)
+          def create_scheduled_week(friday, open_now=False):
+              game1, game2 = get_fixture_pair(friday)
 
               payload = {
                   'week_start': friday.isoformat(),
-
                   'game1_home': game1['home'],
                   'game1_away': game1['away'],
-                  'game1_kickoff':
-                      game1['kick'].isoformat(),
-
+                  'game1_kickoff': game1['kick'].isoformat(),
                   'game2_home': game2['home'],
                   'game2_away': game2['away'],
-                  'game2_kickoff':
-                      game2['kick'].isoformat()
+                  'game2_kickoff': game2['kick'].isoformat()
               }
 
-
-              body = json.dumps(payload).encode()
-
-              req = Request(
-                  URL + '/rest/v1/weeks'
-                  '?on_conflict=week_start',
-                  data=body,
-                  method='POST',
-                  headers={
-                      'Content-Type':
-                          'application/json',
-                      'apikey': SECRET,
-                      'Authorization':
-                          'Bearer ' + SECRET,
-                      'Prefer':
-                          'resolution=merge-duplicates'
-                  }
+              supabase(
+                  'POST',
+                  '/rest/v1/weeks?on_conflict=week_start',
+                  payload,
+                  'resolution=ignore-duplicates,return=minimal'
               )
 
-              with urlopen(req, timeout=30) as response:
-
-                  print(
-                      'Weekly games saved:',
-                      response.status
+              if open_now:
+                  supabase(
+                      'PATCH',
+                      '/rest/v1/weeks?week_start=eq.' + friday.isoformat(),
+                      {'status': 'open'},
+                      'return=minimal'
                   )
 
-
               print(
-                  'GAME 1:',
-                  game1['home'],
-                  'v',
-                  game1['away'],
-                  game1['kick'].isoformat()
+                  'Week ready:',
+                  friday.isoformat(),
+                  '|',
+                  game1['home'], 'v', game1['away'],
+                  '|',
+                  game2['home'], 'v', game2['away'],
+                  '| open =', open_now
               )
 
-              print(
-                  'GAME 2:',
-                  game2['home'],
-                  'v',
-                  game2['away'],
-                  game2['kick'].isoformat()
+          # TUESDAY 08:00 - CREATE THE WEEK IF IT DOES NOT EXIST
+
+          if NOW.weekday() == 1 and NOW.hour == 8:
+
+              days_until_friday = (4 - NOW.weekday()) % 7
+
+              friday = (
+                  NOW + timedelta(days=days_until_friday)
+              ).date()
+
+              existing = supabase(
+                  'GET',
+                  '/rest/v1/weeks'
+                  '?select=id,week_start,status'
+                  '&week_start=eq.' + friday.isoformat()
+                  '&limit=1'
               )
 
+              if existing:
+                  print(
+                      'Tuesday: week already exists:',
+                      friday.isoformat()
+                  )
+              else:
+                  create_scheduled_week(
+                      friday,
+                      open_now=False
+                  )
 
-          # ---------------------------------------------------------
-          # GET CURRENT SUPER 2s WEEK
-          # ---------------------------------------------------------
+          # GET LATEST WEEK
 
-          req = Request(
-              URL +
+          weeks = supabase(
+              'GET',
               '/rest/v1/weeks'
               '?select=*'
               '&order=week_start.desc'
-              '&limit=1',
-              headers={
-                  'apikey': SECRET,
-                  'Authorization':
-                      'Bearer ' + SECRET
-              }
+              '&limit=1'
           )
 
-          with urlopen(req, timeout=30) as response:
-
-              weeks = json.loads(
-                  response.read().decode()
-              )
-
-
           if not weeks:
-
               raise SystemExit(
                   'No SUPER 2s week exists yet.'
               )
 
-
           week = weeks[0]
 
-
-          # ---------------------------------------------------------
           # CHECK BOTH GAMES
-          # ---------------------------------------------------------
 
           games = []
-
 
           for home, away, kickoff, number in [
 
@@ -359,37 +237,21 @@ jobs:
           ]:
 
               target = datetime.fromisoformat(
-                  kickoff.replace(
-                      'Z',
-                      '+00:00'
-                  )
+                  kickoff.replace('Z', '+00:00')
               ).astimezone(UK)
 
-
               if target > NOW:
-
                   continue
-
-
-              date_string = target.strftime(
-                  '%Y%m%d'
-              )
-
 
               data = get_json(
                   'https://site.api.espn.com/apis/site/v2/'
                   'sports/soccer/eng.1/scoreboard'
-                  '?dates=' + date_string
+                  '?dates=' + target.strftime('%Y%m%d')
               )
-
 
               found = None
 
-
-              for event in data.get(
-                  'events',
-                  []
-              ):
+              for event in data.get('events', []):
 
                   competition = event.get(
                       'competitions',
@@ -401,24 +263,15 @@ jobs:
                       []
                   )
 
-
                   names = [
-
                       team.get(
                           'team',
                           {}
                       ).get('displayName')
-
                       for team in teams
-
                   ]
 
-
-                  if (
-                      home in names
-                      and
-                      away in names
-                  ):
+                  if home in names and away in names:
 
                       status = competition.get(
                           'status',
@@ -428,60 +281,38 @@ jobs:
                           {}
                       )
 
-
                       if status.get('completed'):
 
                           home_team = next(
-                              team
-                              for team in teams
-                              if team.get(
+                              t for t in teams
+                              if t.get(
                                   'team',
                                   {}
-                              ).get(
-                                  'displayName'
-                              ) == home
+                              ).get('displayName') == home
                           )
-
 
                           away_team = next(
-                              team
-                              for team in teams
-                              if team.get(
+                              t for t in teams
+                              if t.get(
                                   'team',
                                   {}
-                              ).get(
-                                  'displayName'
-                              ) == away
+                              ).get('displayName') == away
                           )
 
-
                           found = (
-                              int(
-                                  home_team.get(
-                                      'score'
-                                  )
-                              ),
-                              int(
-                                  away_team.get(
-                                      'score'
-                                  )
-                              )
+                              int(home_team.get('score')),
+                              int(away_team.get('score'))
                           )
 
                           break
-
 
               games.append(
                   (number, found)
               )
 
-
-          # ---------------------------------------------------------
-          # SAVE ANY COMPLETED SCORES
-          # ---------------------------------------------------------
+          # SAVE COMPLETED SCORES
 
           updates = {}
-
 
           for number, score in games:
 
@@ -495,56 +326,21 @@ jobs:
                       'game%d_score_away' % number
                   ] = score[1]
 
-
           if updates:
-
-              # Leave the week OPEN here.
-              # The database settlement function decides whether
-              # the round is finished.
 
               updates['status'] = 'open'
 
-
-              body = json.dumps(
-                  updates
-              ).encode()
-
-
-              req = Request(
-                  URL +
-                  '/rest/v1/weeks'
-                  '?id=eq.' + week['id'],
-
-                  data=body,
-
-                  method='PATCH',
-
-                  headers={
-                      'Content-Type':
-                          'application/json',
-
-                      'apikey':
-                          SECRET,
-
-                      'Authorization':
-                          'Bearer ' + SECRET,
-
-                      'Prefer':
-                          'return=minimal'
-                  }
+              supabase(
+                  'PATCH',
+                  '/rest/v1/weeks?id=eq.' + week['id'],
+                  updates,
+                  'return=minimal'
               )
 
-
-              with urlopen(
-                  req,
-                  timeout=30
-              ) as response:
-
-                  print(
-                      'Scores updated:',
-                      response.status,
-                      updates
-                  )
+              print(
+                  'Scores updated:',
+                  updates
+              )
 
           else:
 
@@ -552,61 +348,22 @@ jobs:
                   'No completed score changes found.'
               )
 
+          # RE-READ CURRENT WEEK
 
-          # ---------------------------------------------------------
-          # RE-READ WEEK
-          # ---------------------------------------------------------
-
-          req = Request(
-              URL +
+          current_rows = supabase(
+              'GET',
               '/rest/v1/weeks'
-              '?id=eq.' + week['id'] +
-              '&select=*',
-
-              headers={
-                  'apikey': SECRET,
-                  'Authorization':
-                      'Bearer ' + SECRET
-              }
+              '?id=eq.' + week['id']
+              + '&select=*'
           )
 
+          if not current_rows:
 
-          with urlopen(
-              req,
-              timeout=30
-          ) as response:
-
-              latest_rows = json.loads(
-                  response.read().decode()
-              )
-
-
-          if not latest_rows:
-
-              print(
+              raise SystemExit(
                   'No week found after score update.'
               )
 
-              raise SystemExit(0)
-
-
-          current = latest_rows[0]
-
-
-          # ---------------------------------------------------------
-          # SETTLE THE ROUND
-          # ---------------------------------------------------------
-          #
-          # Game 1 finished + players remain:
-          #     round stays open.
-          #
-          # Game 1 finished + NO players remain:
-          #     round finishes immediately and the next
-          #     scheduled week is opened.
-          #
-          # Both games finished:
-          #     winner is determined normally.
-          #
+          current = current_rows[0]
 
           game1_finished = (
               current.get(
@@ -618,8 +375,13 @@ jobs:
               ) is not None
           )
 
+          # SETTLE
 
-          if game1_finished:
+          if (
+              game1_finished
+              and
+              current.get('status') == 'open'
+          ):
 
               try:
 
@@ -631,12 +393,10 @@ jobs:
                       }
                   )
 
-
                   print(
                       'Settlement checked:',
                       result
                   )
-
 
               except Exception as error:
 
@@ -648,8 +408,83 @@ jobs:
           else:
 
               print(
-                  'Game 1 has not finished yet.'
+                  'Settlement not required:',
+                  'game1_finished =',
+                  game1_finished,
+                  '| status =',
+                  current.get('status')
               )
 
+          # IF THE ROUND FINISHED AND THERE IS NO FUTURE
+          # SCHEDULED WEEK, CREATE AND OPEN THE NEXT ROUND NOW.
+
+          settled_rows = supabase(
+              'GET',
+              '/rest/v1/weeks'
+              '?id=eq.' + current['id']
+              + '&select=id,week_start,status'
+          )
+
+          if (
+              settled_rows
+              and
+              settled_rows[0].get('status') == 'finished'
+          ):
+
+              current_start = date.fromisoformat(
+                  settled_rows[0]['week_start']
+              )
+
+              future = supabase(
+                  'GET',
+                  '/rest/v1/weeks'
+                  '?select=id,week_start,status'
+                  '&week_start=gt.' + current_start.isoformat()
+                  '&status=eq.scheduled'
+                  '&order=week_start.asc'
+                  '&limit=1'
+              )
+
+              if future:
+
+                  print(
+                      'Future scheduled week already exists:',
+                      future[0]['week_start']
+                  )
+
+                  # The settlement function normally opens this week.
+                  # If it did not, open it here.
+
+                  supabase(
+                      'PATCH',
+                      '/rest/v1/weeks?id=eq.' + future[0]['id'],
+                      {'status': 'open'},
+                      'return=minimal'
+                  )
+
+              else:
+
+                  days_ahead = (
+                      4 - current_start.weekday()
+                  ) % 7
+
+                  if days_ahead == 0:
+                      days_ahead = 7
+
+                  next_friday = (
+                      current_start
+                      + timedelta(days=days_ahead)
+                  )
+
+                  print(
+                      'No future scheduled week found. '
+                      'Creating and opening:',
+                      next_friday.isoformat()
+                  )
+
+                  create_scheduled_week(
+                      next_friday,
+                      open_now=True
+                  )
 
           PY
