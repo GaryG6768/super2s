@@ -115,7 +115,6 @@ jobs:
                   day += timedelta(days=1)
 
               events.sort(key=lambda x: x['kick'])
-
               pairs = []
 
               for i, first in enumerate(events):
@@ -171,31 +170,25 @@ jobs:
           # TUESDAY 08:00 - CREATE THE WEEK IF IT DOES NOT EXIST
 
           if NOW.weekday() == 1 and NOW.hour == 8:
-
               days_until_friday = (4 - NOW.weekday()) % 7
+              friday = (NOW + timedelta(days=days_until_friday)).date()
 
-              friday = (
-                  NOW + timedelta(days=days_until_friday)
-              ).date()
-
-              existing = supabase(
-                  'GET',
+              existing_path = (
                   '/rest/v1/weeks'
                   '?select=id,week_start,status'
                   '&week_start=eq.' + friday.isoformat()
-                  '&limit=1'
+                  + '&limit=1'
+              )
+
+              existing = supabase(
+                  'GET',
+                  existing_path
               )
 
               if existing:
-                  print(
-                      'Tuesday: week already exists:',
-                      friday.isoformat()
-                  )
+                  print('Tuesday: week already exists:', friday.isoformat())
               else:
-                  create_scheduled_week(
-                      friday,
-                      open_now=False
-                  )
+                  create_scheduled_week(friday, open_now=False)
 
           # GET LATEST WEEK
 
@@ -208,9 +201,7 @@ jobs:
           )
 
           if not weeks:
-              raise SystemExit(
-                  'No SUPER 2s week exists yet.'
-              )
+              raise SystemExit('No SUPER 2s week exists yet.')
 
           week = weeks[0]
 
@@ -219,23 +210,19 @@ jobs:
           games = []
 
           for home, away, kickoff, number in [
-
               (
                   week['game1_home'],
                   week['game1_away'],
                   week['game1_kickoff'],
                   1
               ),
-
               (
                   week['game2_home'],
                   week['game2_away'],
                   week['game2_kickoff'],
                   2
               )
-
           ]:
-
               target = datetime.fromisoformat(
                   kickoff.replace('Z', '+00:00')
               ).astimezone(UK)
@@ -252,51 +239,26 @@ jobs:
               found = None
 
               for event in data.get('events', []):
-
-                  competition = event.get(
-                      'competitions',
-                      [{}]
-                  )[0]
-
-                  teams = competition.get(
-                      'competitors',
-                      []
-                  )
+                  competition = event.get('competitions', [{}])[0]
+                  teams = competition.get('competitors', [])
 
                   names = [
-                      team.get(
-                          'team',
-                          {}
-                      ).get('displayName')
+                      team.get('team', {}).get('displayName')
                       for team in teams
                   ]
 
                   if home in names and away in names:
-
-                      status = competition.get(
-                          'status',
-                          {}
-                      ).get(
-                          'type',
-                          {}
-                      )
+                      status = competition.get('status', {}).get('type', {})
 
                       if status.get('completed'):
-
                           home_team = next(
                               t for t in teams
-                              if t.get(
-                                  'team',
-                                  {}
-                              ).get('displayName') == home
+                              if t.get('team', {}).get('displayName') == home
                           )
 
                           away_team = next(
                               t for t in teams
-                              if t.get(
-                                  'team',
-                                  {}
-                              ).get('displayName') == away
+                              if t.get('team', {}).get('displayName') == away
                           )
 
                           found = (
@@ -306,28 +268,18 @@ jobs:
 
                           break
 
-              games.append(
-                  (number, found)
-              )
+              games.append((number, found))
 
           # SAVE COMPLETED SCORES
 
           updates = {}
 
           for number, score in games:
-
               if score is not None:
-
-                  updates[
-                      'game%d_score_home' % number
-                  ] = score[0]
-
-                  updates[
-                      'game%d_score_away' % number
-                  ] = score[1]
+                  updates['game%d_score_home' % number] = score[0]
+                  updates['game%d_score_away' % number] = score[1]
 
           if updates:
-
               updates['status'] = 'open'
 
               supabase(
@@ -337,112 +289,87 @@ jobs:
                   'return=minimal'
               )
 
-              print(
-                  'Scores updated:',
-                  updates
-              )
+              print('Scores updated:', updates)
 
           else:
-
-              print(
-                  'No completed score changes found.'
-              )
+              print('No completed score changes found.')
 
           # RE-READ CURRENT WEEK
 
-          current_rows = supabase(
-              'GET',
+          current_path = (
               '/rest/v1/weeks'
               '?id=eq.' + week['id']
               + '&select=*'
           )
 
-          if not current_rows:
+          current_rows = supabase(
+              'GET',
+              current_path
+          )
 
-              raise SystemExit(
-                  'No week found after score update.'
-              )
+          if not current_rows:
+              raise SystemExit('No week found after score update.')
 
           current = current_rows[0]
 
           game1_finished = (
-              current.get(
-                  'game1_score_home'
-              ) is not None
-              and
-              current.get(
-                  'game1_score_away'
-              ) is not None
+              current.get('game1_score_home') is not None
+              and current.get('game1_score_away') is not None
           )
 
           # SETTLE
 
-          if (
-              game1_finished
-              and
-              current.get('status') == 'open'
-          ):
-
+          if game1_finished and current.get('status') == 'open':
               try:
-
                   result = rpc(
                       'settle_week_and_activate_next',
-                      {
-                          'p_week_id':
-                              current['id']
-                      }
+                      {'p_week_id': current['id']}
                   )
 
-                  print(
-                      'Settlement checked:',
-                      result
-                  )
+                  print('Settlement checked:', result)
 
               except Exception as error:
-
-                  print(
-                      'Settlement check failed:',
-                      error
-                  )
+                  print('Settlement check failed:', error)
 
           else:
-
               print(
                   'Settlement not required:',
-                  'game1_finished =',
-                  game1_finished,
-                  '| status =',
-                  current.get('status')
+                  'game1_finished =', game1_finished,
+                  '| status =', current.get('status')
               )
 
           # IF THE ROUND FINISHED AND THERE IS NO FUTURE
           # SCHEDULED WEEK, CREATE AND OPEN THE NEXT ROUND NOW.
 
-          settled_rows = supabase(
-              'GET',
+          settled_path = (
               '/rest/v1/weeks'
               '?id=eq.' + current['id']
               + '&select=id,week_start,status'
           )
 
-          if (
-              settled_rows
-              and
-              settled_rows[0].get('status') == 'finished'
-          ):
+          settled_rows = supabase(
+              'GET',
+              settled_path
+          )
+
+          if settled_rows and settled_rows[0].get('status') == 'finished':
 
               current_start = date.fromisoformat(
                   settled_rows[0]['week_start']
               )
 
-              future = supabase(
-                  'GET',
+              future_path = (
                   '/rest/v1/weeks'
                   '?select=id,week_start,status'
                   '&week_start=gt.' + current_start.isoformat()
-                  '&status=eq.scheduled'
-                  '&order=week_start.asc'
-                  '&limit=1'
+                  + '&status=eq.scheduled'
+                  + '&order=week_start.asc'
+                  + '&limit=1'
+              )
+
+              future = supabase(
+                  'GET',
+                  future_path
               )
 
               if future:
@@ -477,8 +404,7 @@ jobs:
                   )
 
                   print(
-                      'No future scheduled week found. '
-                      'Creating and opening:',
+                      'No future scheduled week found. Creating and opening:',
                       next_friday.isoformat()
                   )
 
