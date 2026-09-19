@@ -1034,6 +1034,246 @@ if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.se
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initB);else initB();
 })();
 </script>
+<script>
+/* SUPER 2s — automatic Friday 18:00 prediction deadline */
+(function(){
 
+  function getUKDeadline(weekStart){
+    if(!weekStart) return null;
+
+    const parts=String(weekStart).split("-").map(Number);
+    const y=parts[0];
+    const m=parts[1];
+    const d=parts[2];
+
+    /*
+      Start with 18:00 UTC and check what hour that represents
+      in Europe/London. This automatically handles BST/GMT.
+    */
+    const guess=Date.UTC(y,m-1,d,18,0,0);
+
+    const londonParts=new Intl.DateTimeFormat("en-GB",{
+      timeZone:"Europe/London",
+      hour:"2-digit",
+      hourCycle:"h23"
+    }).formatToParts(new Date(guess));
+
+    const londonHour=Number(
+      londonParts.find(p=>p.type==="hour")?.value || 18
+    );
+
+    return new Date(
+      guess-(londonHour-18)*60*60*1000
+    );
+  }
+
+  function deadlinePassed(){
+
+    if(!window.currentWeek || !currentWeek.week_start){
+      return false;
+    }
+
+    const deadline=getUKDeadline(
+      currentWeek.week_start
+    );
+
+    return deadline
+      ? Date.now()>=deadline.getTime()
+      : false;
+  }
+
+  function updateDeadline(){
+
+    if(!window.currentWeek || !currentWeek.week_start){
+      return;
+    }
+
+    let card=document.getElementById(
+      "super2sDeadlineCard"
+    );
+
+    /*
+      Create the deadline card automatically.
+    */
+    if(!card){
+
+      card=document.createElement("div");
+
+      card.id="super2sDeadlineCard";
+
+      card.style.cssText=
+        "background:#fff7ed;"+
+        "border:2px solid #f59e0b;"+
+        "border-radius:18px;"+
+        "padding:18px;"+
+        "margin:12px 0;"+
+        "text-align:center;"+
+        "box-shadow:0 3px 14px #00000010;";
+
+      const potCard=document.getElementById(
+        "potCard"
+      );
+
+      if(potCard && potCard.parentNode){
+
+        potCard.parentNode.insertBefore(
+          card,
+          potCard.nextSibling
+        );
+
+      }else{
+
+        return;
+      }
+    }
+
+    const deadline=getUKDeadline(
+      currentWeek.week_start
+    );
+
+    if(!deadline)return;
+
+    const formatted=new Intl.DateTimeFormat(
+      "en-GB",
+      {
+        weekday:"long",
+        day:"numeric",
+        month:"long",
+        hour:"2-digit",
+        minute:"2-digit",
+        hourCycle:"h23",
+        timeZone:"Europe/London"
+      }
+    ).format(deadline);
+
+    const closed=
+      Date.now()>=deadline.getTime();
+
+    if(closed){
+
+      card.style.background="#fee2e2";
+      card.style.borderColor="#dc2626";
+
+      card.innerHTML=
+        '<div style="font-size:13px;font-weight:900;letter-spacing:1px;color:#991b1b">'+
+        '⏰ PREDICTIONS DEADLINE'+
+        '</div>'+
+        '<div style="font-size:24px;font-weight:900;color:#991b1b;margin:5px 0">'+
+        '🔒 PREDICTIONS ARE NOW CLOSED'+
+        '</div>'+
+        '<div style="font-size:13px;font-weight:800;color:#991b1b">'+
+        formatted+
+        ' UK time'+
+        '</div>';
+
+      const submitButton=document.getElementById(
+        "submitBtn"
+      );
+
+      if(submitButton){
+        submitButton.disabled=true;
+      }
+
+    }else{
+
+      card.style.background="#fff7ed";
+      card.style.borderColor="#f59e0b";
+
+      card.innerHTML=
+        '<div style="font-size:13px;font-weight:900;letter-spacing:1px;color:#92400e">'+
+        '⏰ PREDICTIONS MUST BE IN BY'+
+        '</div>'+
+        '<div style="font-size:24px;font-weight:900;color:#92400e;margin:5px 0">'+
+        formatted+
+        '</div>'+
+        '<div style="font-size:13px;font-weight:800;color:#92400e">'+
+        'UK time • Friday 18:00 deadline'+
+        '</div>';
+    }
+  }
+
+  /*
+    Stop the Submit button being used after 18:00,
+    even if the player has the page open already.
+  */
+  document.addEventListener(
+    "click",
+    function(event){
+
+      const target=event.target;
+
+      if(
+        target &&
+        target.id==="submitBtn" &&
+        deadlinePassed()
+      ){
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        alert(
+          "Predictions are closed. "+
+          "The deadline was 18:00 UK time on Friday."
+        );
+
+        updateDeadline();
+      }
+
+      if(
+        target &&
+        (
+          target.id==="spinBtn1" ||
+          target.id==="spinBtn2"
+        ) &&
+        deadlinePassed()
+      ){
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        alert(
+          "Predictions are closed for this round."
+        );
+
+        updateDeadline();
+      }
+
+    },
+    true
+  );
+
+  /*
+    currentWeek is loaded shortly after the page opens,
+    so keep checking until it is available.
+  */
+  const timer=setInterval(function(){
+
+    if(
+      window.currentWeek &&
+      currentWeek.week_start
+    ){
+
+      updateDeadline();
+
+      /*
+        Once loaded, keep the deadline clock updated.
+      */
+      return;
+    }
+
+    updateDeadline();
+
+  },1000);
+
+  /*
+    Refresh the deadline status every 30 seconds.
+  */
+  setInterval(
+    updateDeadline,
+    30000
+  );
+
+})();
+</script>
 </body>
 </html>
