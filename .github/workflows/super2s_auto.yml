@@ -737,42 +737,45 @@ jobs:
 
               else:
 
-    # No future round exists yet.
-    # Search forward one week at a time until suitable
-    # Premier League fixtures are found.
+                  # No future round exists yet.
+                  # Search forward one week at a time until suitable
+                  # Premier League fixtures are found.
 
-    next_friday = current_start + timedelta(days=7)
-    next_pair = None
+                  next_friday = current_start + timedelta(days=7)
+                  next_pair = None
 
-    for _ in range(52):
+                  for _ in range(52):
 
-        try:
-            next_pair = get_fixture_pair(next_friday)
-            break
+                      try:
+                          next_pair = get_fixture_pair(next_friday)
+                          break
 
-        except SystemExit:
+                      except SystemExit:
 
-            print(
-                'No suitable fixtures for:',
-                next_friday.isoformat(),
-                '- checking the following week.'
-            )
+                          print(
+                              'No suitable fixtures for:',
+                              next_friday.isoformat(),
+                              '- checking the following week.'
+                          )
 
-            next_friday += timedelta(days=7)
+                          next_friday += timedelta(days=7)
 
-    if next_pair is None:
+                  if next_pair is None:
 
-        raise SystemExit(
-            'Could not find a future round with suitable fixtures.'
-        )
+                      raise SystemExit(
+                          'Could not find a future round with suitable fixtures.'
+                      )
 
-    print(
-        'Creating and opening:',
-        next_friday.isoformat()
-    )
+                  print(
+                      'Creating and opening:',
+                      next_friday.isoformat()
+                  )
 
-    create_scheduled_week(
-        next_friday,
-        open_now=True,
-        fixture_pair=next_pair
-    )
+                  create_scheduled_week(
+                      next_friday,
+                      open_now=True,
+                      fixture_pair=next_pair
+                  )
+
+          print('SUPER 2s automation completed.')
+PY
