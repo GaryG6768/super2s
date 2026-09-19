@@ -219,11 +219,15 @@ jobs:
 
 
           def create_scheduled_week(
-              friday,
-              open_now=False
-          ):
+    friday,
+    open_now=False,
+    fixture_pair=None
+):
 
-              game1, game2 = get_fixture_pair(friday)
+    if fixture_pair is None:
+        game1, game2 = get_fixture_pair(friday)
+    else:
+        game1, game2 = fixture_pair
 
               payload = {
                   'week_start': friday.isoformat(),
