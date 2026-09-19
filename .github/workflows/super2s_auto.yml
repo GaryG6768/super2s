@@ -11,13 +11,11 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
-
     steps:
       - name: Run SUPER 2s automation
         env:
           SUPABASE_URL: 'https://hwgxfgmmupnxhtviuqks.supabase.co'
           SUPABASE_SECRET: ${{ secrets.SUPER2S_SUPABASE_SECRET }}
-
         run: |
           python - <<'PY'
           import os
@@ -30,7 +28,6 @@ jobs:
 
           UK = ZoneInfo('Europe/London')
           NOW = datetime.now(UK)
-
           URL = os.environ['SUPABASE_URL']
           SECRET = os.environ.get('SUPABASE_SECRET', '')
 
@@ -44,10 +41,15 @@ jobs:
 
               for attempt in range(3):
                   try:
-                      with urlopen(
-                          Request(url),
-                          timeout=30
-                      ) as response:
+                      req = Request(
+                          url,
+                          headers={
+                              'User-Agent': 'SUPER2s/1.0',
+                              'Accept': 'application/json'
+                          }
+                      )
+
+                      with urlopen(req, timeout=30) as response:
                           return json.loads(
                               response.read().decode()
                           )
@@ -59,7 +61,6 @@ jobs:
                           time.sleep(2)
 
               raise last_error
-
 
           def supabase(
               method,
@@ -84,14 +85,14 @@ jobs:
               if prefer:
                   headers['Prefer'] = prefer
 
-              request = Request(
+              req = Request(
                   URL + path,
                   data=data,
                   method=method,
                   headers=headers
               )
 
-              with urlopen(request, timeout=30) as response:
+              with urlopen(req, timeout=30) as response:
                   raw = response.read().decode()
 
                   return (
@@ -100,7 +101,6 @@ jobs:
                       else None
                   )
 
-
           def rpc(name, args):
               return supabase(
                   'POST',
@@ -108,8 +108,8 @@ jobs:
                   args
               )
 
-
           def get_fixture_pair(friday):
+
               monday = friday + timedelta(days=3)
 
               events = []
@@ -120,10 +120,14 @@ jobs:
                   data = get_json(
                       'https://site.api.espn.com/apis/site/v2/'
                       'sports/soccer/eng.1/scoreboard'
-                      '?dates=' + day.strftime('%Y%m%d')
+                      '?dates='
+                      + day.strftime('%Y%m%d')
                   )
 
-                  for event in data.get('events', []):
+                  for event in data.get(
+                      'events',
+                      []
+                  ):
 
                       competition = event.get(
                           'competitions',
@@ -139,11 +143,17 @@ jobs:
                           continue
 
                       kickoff = datetime.fromisoformat(
-                          timestamp.replace('Z', '+00:00')
+                          timestamp.replace(
+                              'Z',
+                              '+00:00'
+                          )
                       ).astimezone(UK)
 
                       if kickoff.weekday() not in (
-                          4, 5, 6, 0
+                          4,
+                          5,
+                          6,
+                          0
                       ):
                           continue
 
@@ -182,6 +192,7 @@ jobs:
                       )
 
                       if home_name and away_name:
+
                           events.append({
                               'home': home_name,
                               'away': away_name,
@@ -206,39 +217,87 @@ jobs:
                       ).total_seconds()
 
                       if gap >= 7200:
+
                           pairs.append(
-                              (first, second)
+                              (
+                                  first,
+                                  second
+                              )
                           )
 
               if not pairs:
-                  raise SystemExit(
-                      'No suitable fixture pair found.'
-                  )
+                  return None
 
               return random.choice(pairs)
 
+          def find_next_fixture_week(
+              start_friday
+          ):
 
-                    def create_scheduled_week(
+              friday = start_friday
+
+              for _ in range(52):
+
+                  pair = get_fixture_pair(
+                      friday
+                  )
+
+                  if pair is not None:
+                      return friday, pair
+
+                  print(
+                      'No suitable fixtures for:',
+                      friday.isoformat(),
+                      '- checking the following week.'
+                  )
+
+                  friday += timedelta(days=7)
+
+              raise SystemExit(
+                  'Could not find a future round '
+                  'with suitable fixtures.'
+              )
+
+          def create_scheduled_week(
               friday,
               open_now=False,
               fixture_pair=None
           ):
 
               if fixture_pair is None:
-                  game1, game2 = get_fixture_pair(friday)
-              else:
-                  game1, game2 = fixture_pair
+
+                  fixture_pair = get_fixture_pair(
+                      friday
+                  )
+
+              if fixture_pair is None:
+
+                  raise SystemExit(
+                      'No suitable fixture pair found for '
+                      + friday.isoformat()
+                  )
+
+              game1, game2 = fixture_pair
 
               payload = {
-                  'week_start': friday.isoformat(),
+                  'week_start':
+                      friday.isoformat(),
 
-                  'game1_home': game1['home'],
-                  'game1_away': game1['away'],
+                  'game1_home':
+                      game1['home'],
+
+                  'game1_away':
+                      game1['away'],
+
                   'game1_kickoff':
                       game1['kick'].isoformat(),
 
-                  'game2_home': game2['home'],
-                  'game2_away': game2['away'],
+                  'game2_home':
+                      game2['home'],
+
+                  'game2_away':
+                      game2['away'],
+
                   'game2_kickoff':
                       game2['kick'].isoformat()
               }
@@ -277,56 +336,6 @@ jobs:
                   '| open =',
                   open_now
               )
-    open_now=False,
-
-                  'week_start': friday.isoformat(),
-
-                  'game1_home': game1['home'],
-                  'game1_away': game1['away'],
-                  'game1_kickoff':
-                      game1['kick'].isoformat(),
-
-                  'game2_home': game2['home'],
-                  'game2_away': game2['away'],
-                  'game2_kickoff':
-                      game2['kick'].isoformat()
-              }
-
-              supabase(
-                  'POST',
-                  '/rest/v1/weeks?on_conflict=week_start',
-                  payload,
-                  'resolution=ignore-duplicates,return=minimal'
-              )
-
-              if open_now:
-
-                  supabase(
-                      'PATCH',
-                      '/rest/v1/weeks'
-                      '?week_start=eq.'
-                      + friday.isoformat(),
-                      {
-                          'status': 'open'
-                      },
-                      'return=minimal'
-                  )
-
-              print(
-                  'Week ready:',
-                  friday.isoformat(),
-                  '|',
-                  game1['home'],
-                  'v',
-                  game1['away'],
-                  '|',
-                  game2['home'],
-                  'v',
-                  game2['away'],
-                  '| open =',
-                  open_now
-              )
-
 
           # -------------------------------------------------
           # TUESDAY FIXTURE CREATION
@@ -337,14 +346,10 @@ jobs:
               and NOW.hour == 8
           ):
 
-              days_until_friday = (
-                  4 - NOW.weekday()
-              ) % 7
-
               friday = (
                   NOW
                   + timedelta(
-                      days=days_until_friday
+                      days=(4 - NOW.weekday()) % 7
                   )
               ).date()
 
@@ -358,20 +363,28 @@ jobs:
               )
 
               if existing:
+
                   print(
                       'Tuesday: week already exists:',
                       friday.isoformat()
                   )
 
               else:
-                  create_scheduled_week(
-                      friday,
-                      open_now=False
+
+                  next_friday, next_pair = (
+                      find_next_fixture_week(
+                          friday
+                      )
                   )
 
+                  create_scheduled_week(
+                      next_friday,
+                      open_now=False,
+                      fixture_pair=next_pair
+                  )
 
           # -------------------------------------------------
-          # GET MOST RECENT ROUND
+          # GET CURRENT WEEK
           # -------------------------------------------------
 
           weeks = supabase(
@@ -383,6 +396,7 @@ jobs:
           )
 
           if not weeks:
+
               raise SystemExit(
                   'No SUPER 2s week exists.'
               )
@@ -398,11 +412,7 @@ jobs:
               week.get('pot_processed')
           )
 
-
-          # -------------------------------------------------
-          # IMPORTANT:
-          # A PROCESSED ROUND MUST NEVER BE REOPENED.
-          # -------------------------------------------------
+          # Never reopen a processed round.
 
           if week.get('pot_processed') is True:
 
@@ -425,19 +435,13 @@ jobs:
 
                   week['status'] = 'finished'
 
-
           # -------------------------------------------------
           # CHECK BOTH GAMES FOR COMPLETED SCORES
           # -------------------------------------------------
 
           games = []
 
-          for (
-              home,
-              away,
-              kickoff,
-              number
-          ) in [
+          for home, away, kickoff, number in [
 
               (
                   week['game1_home'],
@@ -452,10 +456,14 @@ jobs:
                   week['game2_kickoff'],
                   2
               )
+
           ]:
 
               target = datetime.fromisoformat(
-                  kickoff.replace('Z', '+00:00')
+                  kickoff.replace(
+                      'Z',
+                      '+00:00'
+                  )
               ).astimezone(UK)
 
               if target > NOW:
@@ -497,22 +505,24 @@ jobs:
 
                   if (
                       home in names
-                      and away in names
+                      and
+                      away in names
                   ):
 
-                      status = competition.get(
-                          'status',
-                          {}
-                      ).get(
-                          'type',
-                          {}
+                      status = (
+                          competition
+                          .get('status', {})
+                          .get('type', {})
                       )
 
-                      if status.get('completed'):
+                      if status.get(
+                          'completed'
+                      ):
 
                           home_team = next(
-                              t for t in teams
-                              if t.get(
+                              team
+                              for team in teams
+                              if team.get(
                                   'team',
                                   {}
                               ).get(
@@ -521,8 +531,9 @@ jobs:
                           )
 
                           away_team = next(
-                              t for t in teams
-                              if t.get(
+                              team
+                              for team in teams
+                              if team.get(
                                   'team',
                                   {}
                               ).get(
@@ -546,9 +557,11 @@ jobs:
                           break
 
               games.append(
-                  (number, found)
+                  (
+                      number,
+                      found
+                  )
               )
-
 
           # -------------------------------------------------
           # SAVE SCORES
@@ -568,11 +581,7 @@ jobs:
                       'game%d_score_away' % number
                   ] = score[1]
 
-
           if updates:
-
-              # NEVER add status=open here.
-              # This was the source of the reopening problem.
 
               supabase(
                   'PATCH',
@@ -593,19 +602,20 @@ jobs:
                   'No completed score changes.'
               )
 
-
           # -------------------------------------------------
-          # RE-READ ROUND
+          # RE-READ CURRENT WEEK
           # -------------------------------------------------
 
           current_rows = supabase(
               'GET',
               '/rest/v1/weeks'
-              '?id=eq.' + week['id']
+              '?id=eq.'
+              + week['id']
               + '&select=*'
           )
 
           if not current_rows:
+
               raise SystemExit(
                   'Week disappeared after update.'
               )
@@ -622,17 +632,16 @@ jobs:
               ) is not None
           )
 
-
           # -------------------------------------------------
-          # SETTLE IF GAME 1 FINISHED
-          #
-          # We deliberately do NOT require status=open.
+          # DATABASE SETTLEMENT
           # -------------------------------------------------
 
           if (
               game1_finished
               and
-              current.get('pot_processed') is not True
+              current.get(
+                  'pot_processed'
+              ) is not True
           ):
 
               print(
@@ -673,7 +682,6 @@ jobs:
                   )
               )
 
-
           # -------------------------------------------------
           # RE-READ AFTER SETTLEMENT
           # -------------------------------------------------
@@ -681,11 +689,13 @@ jobs:
           settled_rows = supabase(
               'GET',
               '/rest/v1/weeks'
-              '?id=eq.' + current['id']
+              '?id=eq.'
+              + current['id']
               + '&select=id,week_start,status,pot_processed'
           )
 
           if not settled_rows:
+
               raise SystemExit(
                   'Unable to re-read settled round.'
               )
@@ -697,9 +707,8 @@ jobs:
               settled
           )
 
-
           # -------------------------------------------------
-          # IF PROCESSED, FORCE FINISHED
+          # CORRECT PROCESSED ROUND STATUS
           # -------------------------------------------------
 
           if settled.get(
@@ -711,8 +720,8 @@ jobs:
               ) != 'finished':
 
                   print(
-                      'Processed round was not finished.'
-                      ' Correcting it now.'
+                      'Processed round was not finished.',
+                      'Correcting it now.'
                   )
 
                   supabase(
@@ -727,17 +736,18 @@ jobs:
 
                   settled['status'] = 'finished'
 
-
           # -------------------------------------------------
           # AUTOMATICALLY CREATE / OPEN NEXT ROUND
           # -------------------------------------------------
 
           if (
-              settled.get('status')
-              == 'finished'
+              settled.get(
+                  'status'
+              ) == 'finished'
               and
-              settled.get('pot_processed')
-              is True
+              settled.get(
+                  'pot_processed'
+              ) is True
           ):
 
               current_start = date.fromisoformat(
@@ -786,34 +796,12 @@ jobs:
 
               else:
 
-                  # No future round exists yet.
-                  # Search forward one week at a time until suitable
-                  # Premier League fixtures are found.
-
-                  next_friday = current_start + timedelta(days=7)
-                  next_pair = None
-
-                  for _ in range(52):
-
-                      try:
-                          next_pair = get_fixture_pair(next_friday)
-                          break
-
-                      except SystemExit:
-
-                          print(
-                              'No suitable fixtures for:',
-                              next_friday.isoformat(),
-                              '- checking the following week.'
-                          )
-
-                          next_friday += timedelta(days=7)
-
-                  if next_pair is None:
-
-                      raise SystemExit(
-                          'Could not find a future round with suitable fixtures.'
+                  next_friday, next_pair = (
+                      find_next_fixture_week(
+                          current_start
+                          + timedelta(days=7)
                       )
+                  )
 
                   print(
                       'Creating and opening:',
@@ -826,5 +814,7 @@ jobs:
                       fixture_pair=next_pair
                   )
 
-          print('SUPER 2s automation completed.')
-PY
+          print(
+              'SUPER 2s automation completed.'
+          )
+          PY
