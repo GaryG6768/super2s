@@ -1,0 +1,794 @@
+name: SUPER 2s Automatic Fixtures and Results
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * 2'
+      timezone: 'Europe/London'
+    - cron: '*/5 * * * *'
+      timezone: 'Europe/London'
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run SUPER 2s automation
+        env:
+          SUPABASE_URL: 'https://hwgxfgmmupnxhtviuqks.supabase.co'
+          SUPABASE_SECRET: ${{ secrets.SUPER2S_SUPABASE_SECRET }}
+        run: |
+          python - <<'PY'
+          import os
+          import json
+          import random
+          import time
+          from datetime import datetime, timedelta, date
+          from zoneinfo import ZoneInfo
+          from urllib.request import Request, urlopen
+          from urllib.error import HTTPError
+          UK = ZoneInfo('Europe/London')
+          NOW = datetime.now(UK)
+          URL = os.environ['SUPABASE_URL']
+          SECRET = os.environ.get('SUPABASE_SECRET', '')
+
+          if not SECRET:
+              raise SystemExit(
+                  'Missing GitHub secret SUPER2S_SUPABASE_SECRET'
+              )
+
+          def get_json(url):
+              last_error = None
+
+              for attempt in range(3):
+                  try:
+                      req = Request(
+                          url,
+                          headers={
+                              'User-Agent': 'SUPER2s/1.0',
+                              'Accept': 'application/json'
+                          }
+                      )
+
+                      with urlopen(req, timeout=30) as response:
+                          return json.loads(
+                              response.read().decode()
+                          )
+
+                  except Exception as error:
+                      last_error = error
+
+                      if attempt < 2:
+                          time.sleep(2)
+
+              raise last_error
+
+          def supabase(
+              method,
+              path,
+              payload=None,
+              prefer=None
+          ):
+              data = (
+                  json.dumps(payload).encode()
+                  if payload is not None
+                  else None
+              )
+
+              headers = {
+                  'apikey': SECRET,
+                  'Authorization': 'Bearer ' + SECRET
+              }
+
+              if payload is not None:
+                  headers['Content-Type'] = 'application/json'
+
+              if prefer:
+                  headers['Prefer'] = prefer
+
+              req = Request(
+                  URL + path,
+                  data=data,
+                  method=method,
+                  headers=headers
+              )
+
+  
+              try:
+                  with urlopen(req, timeout=30) as response:
+                      raw = response.read().decode()
+                      return (
+                          json.loads(raw)
+                          if raw
+                          else None
+                      )
+              except HTTPError as error:
+                  details = error.read().decode(
+                      'utf-8', errors='replace'
+                  )
+                  print(
+                      'SUPABASE HTTP ERROR:',
+                      method, path, error.code, details
+                  )
+                  raise
+
+
+          def rpc(name, args):
+              return supabase(
+                  'POST',
+                  '/rest/v1/rpc/' + name,
+                  args
+              )
+
+          def get_fixture_pair(friday):
+
+              monday = friday + timedelta(days=3)
+
+              events = []
+              day = friday
+
+              while day <= monday:
+
+                  data = get_json(
+                      'https://site.api.espn.com/apis/site/v2/'
+                      'sports/soccer/eng.1/scoreboard'
+                      '?dates='
+                      + day.strftime('%Y%m%d')
+                  )
+
+                  for event in data.get(
+                      'events',
+                      []
+                  ):
+
+                      competition = event.get(
+                          'competitions',
+                          [{}]
+                      )[0]
+
+                      timestamp = (
+                          event.get('date')
+                          or competition.get('date')
+                      )
+
+                      if not timestamp:
+                          continue
+
+                      kickoff = datetime.fromisoformat(
+                          timestamp.replace(
+                              'Z',
+                              '+00:00'
+                          )
+                      ).astimezone(UK)
+
+                      if kickoff.weekday() not in (
+                          4,
+                          5,
+                          6,
+                          0
+                      ):
+                          continue
+
+                      teams = competition.get(
+                          'competitors',
+                          []
+                      )
+
+                      if len(teams) != 2:
+                          continue
+
+                      home = next(
+                          (
+                              t for t in teams
+                              if t.get('homeAway') == 'home'
+                          ),
+                          teams[0]
+                      )
+
+                      away = next(
+                          (
+                              t for t in teams
+                              if t.get('homeAway') == 'away'
+                          ),
+                          teams[1]
+                      )
+
+                      home_name = (
+                          home.get('team', {})
+                          .get('displayName')
+                      )
+
+                      away_name = (
+                          away.get('team', {})
+                          .get('displayName')
+                      )
+
+                      if home_name and away_name:
+
+                          events.append({
+                              'home': home_name,
+                              'away': away_name,
+                              'kick': kickoff
+                          })
+
+                  day += timedelta(days=1)
+
+              events.sort(
+                  key=lambda x: x['kick']
+              )
+
+              pairs = []
+
+              for i, first in enumerate(events):
+
+                  for second in events[i + 1:]:
+
+                      gap = (
+                          second['kick']
+                          - first['kick']
+                      ).total_seconds()
+
+                      if gap >= 7200:
+
+                          pairs.append(
+                              (
+                                  first,
+                                  second
+                              )
+                          )
+
+              if not pairs:
+                  return None
+
+              return random.choice(pairs)
+
+          def find_next_fixture_week(
+              start_friday
+          ):
+
+              friday = start_friday
+
+              for _ in range(52):
+
+                  pair = get_fixture_pair(
+                      friday
+                  )
+
+                  if pair is not None:
+                      return friday, pair
+
+                  print(
+                      'No suitable fixtures for:',
+                      friday.isoformat(),
+                      '- checking the following week.'
+                  )
+
+                  friday += timedelta(days=7)
+
+              raise SystemExit(
+                  'Could not find a future round '
+                  'with suitable fixtures.'
+              )
+
+          def create_scheduled_week(
+              friday,
+              open_now=False,
+              fixture_pair=None
+          ):
+
+              if fixture_pair is None:
+
+                  fixture_pair = get_fixture_pair(
+                      friday
+                  )
+
+              if fixture_pair is None:
+
+                  raise SystemExit(
+                      'No suitable fixture pair found for '
+                      + friday.isoformat()
+                  )
+
+              game1, game2 = fixture_pair
+
+              payload = {
+                  'week_start':
+                      friday.isoformat(),
+
+                  'game1_home':
+                      game1['home'],
+
+                  'game1_away':
+                      game1['away'],
+
+                  'game1_kickoff':
+                      game1['kick'].isoformat(),
+
+                  'game2_home':
+                      game2['home'],
+
+                  'game2_away':
+                      game2['away'],
+
+                  'game2_kickoff':
+                      game2['kick'].isoformat()
+              }
+
+              supabase(
+                  'POST',
+                  '/rest/v1/weeks?on_conflict=week_start',
+                  payload,
+                  'resolution=ignore-duplicates,return=minimal'
+              )
+
+              if open_now:
+
+                  supabase(
+                      'PATCH',
+                      '/rest/v1/weeks'
+                      '?week_start=eq.'
+                      + friday.isoformat(),
+                      {
+                          'status': 'open'
+                      },
+                      'return=minimal'
+                  )
+
+              print(
+                  'Week ready:',
+                  friday.isoformat(),
+                  '|',
+                  game1['home'],
+                  'v',
+                  game1['away'],
+                  '|',
+                  game2['home'],
+                  'v',
+                  game2['away'],
+                  '| open =',
+                  open_now
+              )
+
+          # -------------------------------------------------
+          # TUESDAY FIXTURE CREATION
+          # -------------------------------------------------
+
+          if (
+              NOW.weekday() == 1
+              and NOW.hour == 8
+          ):
+
+              friday = (
+                  NOW
+                  + timedelta(
+                      days=(4 - NOW.weekday()) % 7
+                  )
+              ).date()
+
+              existing = supabase(
+                  'GET',
+                  '/rest/v1/weeks'
+                  '?select=id,week_start,status'
+                  '&week_start=eq.'
+                  + friday.isoformat()
+                  + '&limit=1'
+              )
+
+              if existing:
+
+                  print(
+                      'Tuesday: week already exists:',
+                      friday.isoformat()
+                  )
+
+              else:
+
+                  next_friday, next_pair = (
+                      find_next_fixture_week(
+                          friday
+                      )
+                  )
+
+                  create_scheduled_week(
+                      next_friday,
+                      open_now=False,
+                      fixture_pair=next_pair
+                  )
+
+          # -------------------------------------------------
+          # GET CURRENT WEEK
+          # -------------------------------------------------
+
+          weeks = supabase(
+              'GET',
+              '/rest/v1/weeks'
+              '?select=*'
+              '&order=week_start.desc'
+              '&limit=1'
+          )
+
+          if not weeks:
+
+              raise SystemExit(
+                  'No SUPER 2s week exists.'
+              )
+
+          week = weeks[0]
+
+          print(
+              'Current week:',
+              week.get('week_start'),
+              '| status =',
+              week.get('status'),
+              '| pot_processed =',
+              week.get('pot_processed')
+          )
+
+          # Never reopen a processed round.
+
+          if week.get('pot_processed') is True:
+
+              if week.get('status') != 'finished':
+
+                  print(
+                      'Correcting already processed round:',
+                      'forcing status to finished.'
+                  )
+
+                  supabase(
+                      'PATCH',
+                      '/rest/v1/weeks?id=eq.'
+                      + week['id'],
+                      {
+                          'status': 'finished'
+                      },
+                      'return=minimal'
+                  )
+
+                  week['status'] = 'finished'
+
+          # -------------------------------------------------
+          # CHECK BOTH GAMES FOR COMPLETED SCORES
+          # -------------------------------------------------
+
+          games = []
+
+          for home, away, kickoff, number in [
+              (
+                  week['game1_home'],
+                  week['game1_away'],
+                  week['game1_kickoff'],
+                  1
+              ),
+              (
+                  week['game2_home'],
+                  week['game2_away'],
+                  week['game2_kickoff'],
+                  2
+              )
+          ]:
+              target = datetime.fromisoformat(
+                  kickoff.replace('Z', '+00:00')
+              ).astimezone(UK)
+
+              found = None
+              is_void = False
+
+              if target <= NOW:
+                  data = get_json(
+                      'https://site.api.espn.com/apis/site/v2/'
+                      'sports/soccer/eng.1/scoreboard'
+                      '?dates='
+                      + target.strftime('%Y%m%d')
+                  )
+
+                  for event in data.get('events', []):
+                      competition = event.get('competitions', [{}])[0]
+                      teams = competition.get('competitors', [])
+                      names = [
+                          team.get('team', {}).get('displayName')
+                          for team in teams
+                      ]
+
+                      if home in names and away in names:
+                          status_obj = competition.get('status', {})
+                          status = status_obj.get('type', {})
+                          status_text = ' '.join(str(value) for value in [
+                              status.get('name', ''),
+                              status.get('description', ''),
+                              status.get('detail', ''),
+                              status_obj.get('name', ''),
+                              status_obj.get('description', ''),
+                              event.get('status', {}).get('type', {}).get('name', ''),
+                              event.get('status', {}).get('type', {}).get('description', '')
+                          ]).lower()
+
+                          is_void = any(word in status_text for word in [
+                              'postponed', 'abandoned', 'canceled', 'cancelled'
+                          ])
+
+                          if status.get('completed'):
+                              home_team = next(
+                                  team for team in teams
+                                  if team.get('team', {}).get('displayName') == home
+                              )
+                              away_team = next(
+                                  team for team in teams
+                                  if team.get('team', {}).get('displayName') == away
+                              )
+                              try:
+                                  found = (
+                                      int(home_team.get('score')),
+                                      int(away_team.get('score'))
+                                  )
+                              except (TypeError, ValueError):
+                                  found = None
+                          if found is not None or is_void:
+                              break
+
+              games.append((number, found, is_void))
+              if is_void:
+                  print('Game %d marked void by ESPN status.' % number)
+
+          # -------------------------------------------------
+          # SAVE SCORES
+          # -------------------------------------------------
+
+          updates = {}
+
+          for number, score, is_void in games:
+
+              if score is not None:
+
+                  updates[
+                      'game%d_score_home' % number
+                  ] = score[0]
+
+                  updates[
+                      'game%d_score_away' % number
+                  ] = score[1]
+
+          if updates:
+
+              supabase(
+                  'PATCH',
+                  '/rest/v1/weeks?id=eq.'
+                  + week['id'],
+                  updates,
+                  'return=minimal'
+              )
+
+              print(
+                  'Scores updated:',
+                  updates
+              )
+
+          else:
+
+              print(
+                  'No completed score changes.'
+              )
+
+          # -------------------------------------------------
+          # RE-READ CURRENT WEEK
+          # -------------------------------------------------
+
+          current_rows = supabase(
+              'GET',
+              '/rest/v1/weeks'
+              '?id=eq.'
+              + week['id']
+              + '&select=*'
+          )
+
+          if not current_rows:
+
+              raise SystemExit(
+                  'Week disappeared after update.'
+              )
+
+          current = current_rows[0]
+
+          game1_finished = (
+              current.get(
+                  'game1_score_home'
+              ) is not None
+              and
+              current.get(
+                  'game1_score_away'
+              ) is not None
+          )
+
+          # -------------------------------------------------
+          # DATABASE SETTLEMENT
+          # -------------------------------------------------
+
+          game1_void = any(
+              number == 1 and is_void
+              for number, score, is_void in games
+          )
+          game2_void = any(
+              number == 2 and is_void
+              for number, score, is_void in games
+          )
+
+          if current.get('pot_processed') is not True:
+              try:
+                  if game1_void:
+                      print('Game 1 postponed/abandoned/cancelled: voiding entire round.')
+                      result = rpc(
+                          'handle_void_week',
+                          {
+                              'p_week_id': current['id'],
+                              'p_void_game': 1
+                          }
+                      )
+                      print('Void-round result:', result)
+
+                  elif game1_finished and game2_void:
+                      print('Game 1 finished and Game 2 postponed/abandoned/cancelled: settling Game 1 only.')
+                      result = rpc(
+                          'handle_void_week',
+                          {
+                              'p_week_id': current['id'],
+                              'p_void_game': 2
+                          }
+                      )
+                      print('Game 2 void result:', result)
+
+                  elif game1_finished:
+                      print('Game 1 finished and round not processed.')
+                      result = rpc(
+                          'settle_week_and_activate_next',
+                          {'p_week_id': current['id']}
+                      )
+                      print('Settlement result:', result)
+
+                  else:
+                      print(
+                          'Settlement not required:',
+                          'game1_finished =', game1_finished,
+                          '| game1_void =', game1_void,
+                          '| game2_void =', game2_void
+                      )
+
+              except Exception as error:
+                  print('Settlement failed:', error)
+          else:
+              print('Settlement not required: pot already processed.')
+
+          # -------------------------------------------------
+          # RE-READ AFTER SETTLEMENT
+          # -------------------------------------------------
+
+          settled_rows = supabase(
+              'GET',
+              '/rest/v1/weeks'
+              '?id=eq.'
+              + current['id']
+              + '&select=id,week_start,status,pot_processed'
+          )
+
+          if not settled_rows:
+
+              raise SystemExit(
+                  'Unable to re-read settled round.'
+              )
+
+          settled = settled_rows[0]
+
+          print(
+              'After settlement:',
+              settled
+          )
+
+          # -------------------------------------------------
+          # CORRECT PROCESSED ROUND STATUS
+          # -------------------------------------------------
+
+          if settled.get(
+              'pot_processed'
+          ) is True:
+
+              if settled.get(
+                  'status'
+              ) != 'finished':
+
+                  print(
+                      'Processed round was not finished.',
+                      'Correcting it now.'
+                  )
+
+                  supabase(
+                      'PATCH',
+                      '/rest/v1/weeks?id=eq.'
+                      + settled['id'],
+                      {
+                          'status': 'finished'
+                      },
+                      'return=minimal'
+                  )
+
+                  settled['status'] = 'finished'
+
+          # -------------------------------------------------
+          # AUTOMATICALLY CREATE / OPEN NEXT ROUND
+          # -------------------------------------------------
+
+          if (
+              settled.get(
+                  'status'
+              ) == 'finished'
+              and
+              settled.get(
+                  'pot_processed'
+              ) is True
+          ):
+
+              current_start = date.fromisoformat(
+                  settled['week_start']
+              )
+
+              future = supabase(
+                  'GET',
+                  '/rest/v1/weeks'
+                  '?select=id,week_start,status'
+                  '&week_start=gt.'
+                  + current_start.isoformat()
+                  + '&order=week_start.asc'
+                  + '&limit=1'
+              )
+
+              if future:
+
+                  next_week = future[0]
+
+                  print(
+                      'Next round already exists:',
+                      next_week['week_start'],
+                      '| status =',
+                      next_week['status']
+                  )
+
+                  if next_week.get(
+                      'status'
+                  ) != 'open':
+
+                      supabase(
+                          'PATCH',
+                          '/rest/v1/weeks?id=eq.'
+                          + next_week['id'],
+                          {
+                              'status': 'open'
+                          },
+                          'return=minimal'
+                      )
+
+                      print(
+                          'Next round opened:',
+                          next_week['week_start']
+                      )
+
+              else:
+
+                  next_friday, next_pair = (
+                      find_next_fixture_week(
+                          current_start
+                          + timedelta(days=7)
+                      )
+                  )
+
+                  print(
+                      'Creating and opening:',
+                      next_friday.isoformat()
+                  )
+
+                  create_scheduled_week(
+                      next_friday,
+                      open_now=True,
+                      fixture_pair=next_pair
+                  )
+
+          print(
+              'SUPER 2s automation completed.'
+          )
+          PY
