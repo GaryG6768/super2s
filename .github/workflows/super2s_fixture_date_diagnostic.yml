@@ -1,0 +1,59 @@
+name: SUPER 2s Fixture Date Diagnostic
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect ESPN fixtures by actual dates
+        run: |
+          python - <<'PY'
+          import json
+          from urllib.request import Request, urlopen
+          from urllib.error import HTTPError, URLError
+
+          dates = ["20261201", "20261202", "20261203", "20261205", "20261206"]
+          base = "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard"
+
+          for day in dates:
+              url = f"{base}?dates={day}&limit=100"
+              print("\\n" + "=" * 80)
+              print("DATE:", day, "URL:", url)
+              try:
+                  req = Request(url, headers={
+                      "User-Agent": "SUPER2s-date-diagnostic/1.0",
+                      "Accept": "application/json"
+                  })
+                  with urlopen(req, timeout=25) as response:
+                      data = json.loads(response.read().decode("utf-8"))
+                  print("EVENT COUNT:", len(data.get("events", [])))
+                  print("LEAGUE SEASON:", json.dumps(
+                      (data.get("leagues") or [{}])[0].get("season", {}),
+                      indent=2
+                  ))
+                  for event in data.get("events", []):
+                      comp = (event.get("competitions") or [{}])[0]
+                      teams = comp.get("competitors") or []
+                      names = []
+                      for team in teams:
+                          names.append({
+                              "name": (team.get("team") or {}).get("displayName"),
+                              "homeAway": team.get("homeAway")
+                          })
+                      print(json.dumps({
+                          "id": event.get("id"),
+                          "name": event.get("name"),
+                          "date": event.get("date") or comp.get("date"),
+                          "week": event.get("week"),
+                          "season": event.get("season"),
+                          "competitors": names,
+                          "status": (comp.get("status") or {}).get("type", {}).get("name")
+                      }, ensure_ascii=False))
+              except HTTPError as e:
+                  print("HTTP ERROR:", e.code, e.reason)
+                  print(e.read().decode("utf-8", errors="replace")[:2000])
+              except (URLError, TimeoutError, ValueError) as e:
+                  print("REQUEST ERROR:", repr(e))
+          PY
