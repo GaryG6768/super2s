@@ -1,0 +1,74 @@
+name: SUPER 2s Round Detection Diagnostic
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect ESPN Premier League season weeks
+        run: |
+          python - <<'PY'
+          import json
+          from urllib.request import Request, urlopen
+          from urllib.error import HTTPError, URLError
+
+          BASE = "https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1"
+          URLS = [
+              f"{BASE}/seasons/2026/types/2/weeks?limit=100",
+              "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?week=14&seasontype=2&limit=100",
+          ]
+
+          def fetch(url):
+              req = Request(url, headers={
+                  "User-Agent": "SUPER2s-round-diagnostic/1.0",
+                  "Accept": "application/json"
+              })
+              with urlopen(req, timeout=25) as response:
+                  raw = response.read()
+                  return response.status, json.loads(raw.decode("utf-8"))
+
+          for url in URLS:
+              print("\\n" + "=" * 90)
+              print("URL:", url)
+              try:
+                  status, data = fetch(url)
+                  print("HTTP:", status)
+                  if isinstance(data, dict):
+                      print("TOP-LEVEL KEYS:", list(data.keys()))
+                      items = data.get("items")
+                      if isinstance(items, list):
+                          print("ITEM COUNT:", len(items))
+                          print("ITEMS SAMPLE:", json.dumps(items[:8], indent=2)[:12000])
+                      events = data.get("events")
+                      if isinstance(events, list):
+                          print("EVENT COUNT:", len(events))
+                          for event in events[:20]:
+                              comp = (event.get("competitions") or [{}])[0]
+                              teams = comp.get("competitors") or []
+                              names = [
+                                  t.get("team", {}).get("displayName")
+                                  for t in teams
+                              ]
+                              print({
+                                  "id": event.get("id"),
+                                  "date": event.get("date") or comp.get("date"),
+                                  "name": event.get("name"),
+                                  "week": event.get("week"),
+                                  "competitors": names,
+                                  "status": (comp.get("status") or {}).get("type", {}).get("name")
+                              })
+                      print("RAW SAMPLE:", json.dumps(data, indent=2)[:16000])
+                  else:
+                      print("RESPONSE TYPE:", type(data).__name__)
+                      print(str(data)[:12000])
+              except HTTPError as e:
+                  print("HTTP ERROR:", e.code, e.reason)
+                  try:
+                      print(e.read().decode("utf-8", errors="replace")[:4000])
+                  except Exception:
+                      pass
+              except (URLError, TimeoutError, ValueError) as e:
+                  print("REQUEST ERROR:", repr(e))
+          PY
