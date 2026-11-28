@@ -1,0 +1,78 @@
+name: SUPER 2s Gameweek Source Diagnostic
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Fantasy Premier League gameweek fixture data
+        run: |
+          python - <<'PY'
+          import json
+          from urllib.request import Request, urlopen
+          from urllib.error import HTTPError, URLError
+
+          BASE = "https://fantasy.premierleague.com/api/"
+
+          def get(path):
+              req = Request(BASE + path, headers={
+                  "User-Agent": "Mozilla/5.0 SUPER2s diagnostic",
+                  "Accept": "application/json"
+              })
+              with urlopen(req, timeout=30) as r:
+                  return json.loads(r.read().decode("utf-8"))
+
+          try:
+              bootstrap = get("bootstrap-static/")
+              fixtures = get("fixtures/")
+              teams = {t["id"]: t["name"] for t in bootstrap.get("teams", [])}
+              events = {e["id"]: e for e in bootstrap.get("events", [])}
+
+              print("BOOTSTRAP EVENT COUNT:", len(events))
+              print("FIXTURE COUNT:", len(fixtures))
+              print("FIXTURE KEYS SAMPLE:", list(fixtures[0].keys()) if fixtures else [])
+
+              target = []
+              for f in fixtures:
+                  kickoff = f.get("kickoff_time")
+                  if not kickoff:
+                      continue
+                  day = kickoff[:10]
+                  if "2026-12-01" <= day <= "2026-12-06":
+                      event_id = f.get("event")
+                      target.append({
+                          "fixture_id": f.get("id"),
+                          "date": kickoff,
+                          "gameweek_event": event_id,
+                          "event_name": events.get(event_id, {}).get("name") if event_id else None,
+                          "home": teams.get(f.get("team_h"), f.get("team_h")),
+                          "away": teams.get(f.get("team_a"), f.get("team_a")),
+                          "started": f.get("started"),
+                          "finished": f.get("finished")
+                      })
+
+              target.sort(key=lambda x: x["date"])
+              print("DEC 1-6 FIXTURE COUNT:", len(target))
+              for item in target:
+                  print(json.dumps(item, ensure_ascii=False))
+
+              print("UPCOMING EVENT SUMMARY:")
+              for event in bootstrap.get("events", []):
+                  if event.get("is_next") or event.get("is_current"):
+                      print(json.dumps({
+                          "id": event.get("id"),
+                          "name": event.get("name"),
+                          "deadline_time": event.get("deadline_time"),
+                          "is_current": event.get("is_current"),
+                          "is_next": event.get("is_next")
+                      }))
+          except HTTPError as e:
+              print("HTTP ERROR:", e.code, e.reason)
+              print(e.read().decode("utf-8", errors="replace")[:4000])
+              raise
+          except (URLError, TimeoutError, ValueError) as e:
+              print("REQUEST ERROR:", repr(e))
+              raise
+          PY
